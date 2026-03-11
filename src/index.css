@@ -1,0 +1,139 @@
+@import url('https://fonts.cdnfonts.com/css/cooper-bt');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 97%;
+    --foreground: 20 15% 15%;
+
+    --card: 30 20% 99%;
+    --card-foreground: 20 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 15% 15%;
+
+    --primary: 22 97% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 30% 93%;
+    --secondary-foreground: 20 15% 20%;
+
+    --muted: 30 15% 94%;
+    --muted-foreground: 20 8% 50%;
+
+    --accent: 340 75% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 30 15% 90%;
+    --input: 30 15% 88%;
+    --ring: 22 97% 44%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 22 97% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 30% 95%;
+    --sidebar-accent-foreground: 20 15% 15%;
+    --sidebar-border: 30 15% 90%;
+    --sidebar-ring: 22 97% 44%;
+
+    --font-heading: 'Cooper BT', 'Cooper', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+
+    --gradient-warm: linear-gradient(135deg, hsl(22, 97%, 44%), hsl(340, 75%, 65%));
+    --shadow-card: 0 2px 16px -4px hsl(22 97% 44% / 0.1);
+    --shadow-elevated: 0 8px 32px -8px hsl(22 97% 44% / 0.15);
+  }
+
+  .dark {
+    --background: 20 15% 8%;
+    --foreground: 30 15% 92%;
+    --card: 20 12% 12%;
+    --card-foreground: 30 15% 92%;
+    --popover: 20 12% 12%;
+    --popover-foreground: 30 15% 92%;
+    --primary: 22 97% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 20 12% 18%;
+    --secondary-foreground: 30 15% 92%;
+    --muted: 20 10% 18%;
+    --muted-foreground: 30 10% 55%;
+    --accent: 340 75% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 22 97% 50%;
+    --sidebar-background: 20 12% 10%;
+    --sidebar-foreground: 30 15% 92%;
+    --sidebar-primary: 22 97% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 10% 16%;
+    --sidebar-accent-foreground: 30 15% 92%;
+    --sidebar-border: 20 10% 20%;
+    --sidebar-ring: 22 97% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .gradient-warm {
+    background: var(--gradient-warm);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .snap-y-mandatory {
+    scroll-snap-type: y mandatory;
+  }
+
+  .snap-start {
+    scroll-snap-align: start;
+  }
+}
