@@ -4,6 +4,7 @@ import donutLogo from '@/assets/donut-logo.png';
 import { freelancers } from '@/data/mockData';
 import FreelancerCard from '@/components/FreelancerCard';
 import ServiceFilter from '@/components/ServiceFilter';
+import { UserMenu } from '@/components/UserMenu';
 
 const Index = () => {
   const [selectedService, setSelectedService] = useState('All');
@@ -33,6 +34,9 @@ const Index = () => {
           <h1 className="font-heading text-2xl font-bold text-foreground tracking-tight">
             Glaze
           </h1>
+          <div className="ml-auto">
+            <UserMenu />
+          </div>
         </div>
       </header>
 
