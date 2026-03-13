@@ -19,3 +19,21 @@ export function validatePassword(password: string): { valid: boolean; error?: st
   if (password.length < 8) return { valid: false, error: 'Password must be at least 8 characters.' };
   return { valid: true };
 }
+
+export function validateTagline(tagline: string): { valid: boolean; error?: string } {
+  const trimmed = tagline.trim();
+  if (trimmed.length > 150) return { valid: false, error: 'Tagline must be under 150 characters.' };
+  return { valid: true };
+}
+
+export function validateCaption(caption: string): { valid: boolean; error?: string } {
+  const trimmed = caption.trim();
+  if (trimmed.length > 200) return { valid: false, error: 'Caption must be under 200 characters.' };
+  return { valid: true };
+}
+
+export function validatePortfolioFile(file: File): { valid: boolean; error?: string } {
+  if (!file.type.startsWith('image/')) return { valid: false, error: 'File must be an image.' };
+  if (file.size > 10 * 1024 * 1024) return { valid: false, error: 'File must be under 10MB.' };
+  return { valid: true };
+}

@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import FreelancerOnboard from "./pages/FreelancerOnboard";
+import EditProfile from "./pages/EditProfile";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
             <Route path="/onboard" element={<ProtectedRoute><FreelancerOnboard /></ProtectedRoute>} />
+            <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><FreelancerProfile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

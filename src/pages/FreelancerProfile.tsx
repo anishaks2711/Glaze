@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play, Briefcase } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play, Briefcase, Pencil } from 'lucide-react';
 import { freelancers } from '@/data/mockData';
 import donutLogo from '@/assets/donut-logo.png';
 import ReelViewer from '@/components/ReelViewer';
 import { useServices } from '@/hooks/useServices';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
 import { UserMenu } from '@/components/UserMenu';
@@ -15,19 +17,24 @@ type TabType = 'reviews' | 'portfolio' | 'client' | 'services';
 const FreelancerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('reviews');
   const [reelOpen, setReelOpen] = useState(false);
   const [reelStartIndex, setReelStartIndex] = useState(0);
 
   const mockFreelancer = freelancers.find((f) => f.id === id);
   const { services: dbServices, loading: servicesLoading } = useServices(id);
-  const [realProfile, setRealProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const { portfolio: dbPortfolio, loading: portfolioLoading } = usePortfolio(id);
+  const isOwner = user?.id === id;
+  const [realProfile, setRealProfile] = useState<{
+    full_name: string; avatar_url: string | null; tagline: string | null; category: string | null; location: string | null;
+  } | null>(null);
   const [profileLoading, setProfileLoading] = useState(!mockFreelancer);
 
   useEffect(() => {
     if (mockFreelancer || !id) return;
     setProfileLoading(true);
-    supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single()
+    supabase.from('profiles').select('full_name, avatar_url, tagline, category, location').eq('id', id).single()
       .then(({ data }) => { setRealProfile(data); setProfileLoading(false); });
   }, [id, mockFreelancer]);
 
@@ -37,9 +44,9 @@ const FreelancerProfile = () => {
     username: realProfile.full_name.toLowerCase().replace(/\s+/g, ''),
     avatar: realProfile.avatar_url ?? '',
     rating: 0,
-    location: '',
-    service: '',
-    bio: '',
+    location: realProfile.location ?? '',
+    service: realProfile.category ?? '',
+    bio: realProfile.tagline ?? '',
     postsCount: 0,
     followers: 0,
     following: 0,
@@ -98,6 +105,14 @@ const FreelancerProfile = () => {
           <span className="font-heading text-lg font-bold text-foreground flex-1">
             @{freelancer.username}
           </span>
+          {isOwner && (
+            <Link
+              to="/edit-profile"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md border border-border"
+            >
+              <Pencil className="h-3 w-3" /> Edit Profile
+            </Link>
+          )}
           <UserMenu />
         </div>
       </header>
@@ -221,26 +236,39 @@ const FreelancerProfile = () => {
             </div>
           )}
 
-          {/* Portfolio Tab */}
+          {/* Portfolio Tab — DB-first, mock fallback for demo freelancers */}
           {activeTab === 'portfolio' && (
-            <div className="grid grid-cols-3 gap-1">
-              {freelancer.portfolio.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="relative aspect-square cursor-pointer overflow-hidden rounded-md bg-secondary group"
-                >
-                  <img
-                    src={item.thumbnail}
-                    alt={item.caption}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  {item.type === 'video' && (
-                    <div className="absolute top-2 right-2">
-                      <Play className="h-4 w-4 text-background drop-shadow-md" />
+            <div>
+              {portfolioLoading ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">Loading portfolio...</p>
+              ) : dbPortfolio.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1">
+                  {dbPortfolio.map(item => (
+                    <div key={item.id} className="relative aspect-square overflow-hidden rounded-md bg-secondary">
+                      <img src={item.image_url} alt={item.caption ?? ''} className="h-full w-full object-cover" />
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              ) : mockFreelancer && mockFreelancer.portfolio.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1">
+                  {mockFreelancer.portfolio.map((item) => (
+                    <div key={item.id} className="relative aspect-square cursor-pointer overflow-hidden rounded-md bg-secondary group">
+                      <img
+                        src={item.thumbnail}
+                        alt={item.caption}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {item.type === 'video' && (
+                        <div className="absolute top-2 right-2">
+                          <Play className="h-4 w-4 text-background drop-shadow-md" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground py-8 text-center">No portfolio photos yet.</p>
+              )}
             </div>
           )}
 
