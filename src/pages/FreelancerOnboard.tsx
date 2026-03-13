@@ -18,13 +18,13 @@ export default function FreelancerOnboard() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validationError = validateServiceName(input);
+  const validationResult = validateServiceName(input);
   const isDuplicate = services.some(
     s => s.service_name.toLowerCase() === input.trim().toLowerCase()
   );
 
   async function handleAdd() {
-    if (validationError) { setError(validationError); return; }
+    if (!validationResult.valid) { setError(validationResult.error ?? 'Invalid service name'); return; }
     if (isDuplicate) { setError('That service is already added.'); return; }
     if (services.length >= 10) { setError('Maximum 10 services allowed.'); return; }
     setAdding(true);
@@ -62,7 +62,7 @@ export default function FreelancerOnboard() {
             />
             <Button
               onClick={handleAdd}
-              disabled={adding || !!validationError || isDuplicate || services.length >= 10}
+              disabled={adding || !validationResult.valid || isDuplicate || services.length >= 10}
               size="icon"
             >
               <Plus className="h-4 w-4" />

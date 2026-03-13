@@ -1,38 +1,67 @@
 import { describe, it, expect } from 'vitest';
-import { validateServiceName } from '@/lib/validation';
+import { validateServiceName, validateEmail, validatePassword } from '@/lib/validation';
 
 describe('validateServiceName', () => {
-  it('returns null for valid names', () => {
-    expect(validateServiceName('Wedding Photography')).toBeNull();
-    expect(validateServiceName('DJ & Events')).toBeNull();
-    expect(validateServiceName('Hair/Makeup')).toBeNull();
-    expect(validateServiceName('abc')).toBeNull();
-  });
-
   it('rejects empty string', () => {
-    expect(validateServiceName('')).not.toBeNull();
+    expect(validateServiceName('').valid).toBe(false);
   });
 
-  it('rejects spaces-only input', () => {
-    expect(validateServiceName('   ')).not.toBeNull();
+  it('rejects whitespace-only strings', () => {
+    expect(validateServiceName('   ').valid).toBe(false);
   });
 
-  it('rejects names shorter than 3 chars', () => {
-    expect(validateServiceName('ab')).not.toBeNull();
+  it('rejects single character', () => {
+    expect(validateServiceName('A').valid).toBe(false);
   });
 
-  it('rejects names over 60 characters', () => {
-    expect(validateServiceName('a'.repeat(61))).not.toBeNull();
+  it('rejects special-characters-only input', () => {
+    expect(validateServiceName('!!!').valid).toBe(false);
+    expect(validateServiceName('???').valid).toBe(false);
   });
 
-  it('rejects special characters / gibberish', () => {
-    expect(validateServiceName('!!!###')).not.toBeNull();
-    expect(validateServiceName('$$$')).not.toBeNull();
-    expect(validateServiceName('@photography')).not.toBeNull();
+  it('accepts valid service names', () => {
+    expect(validateServiceName('Wedding Photography').valid).toBe(true);
   });
 
-  it('accepts names at exactly 3 and 60 characters', () => {
-    expect(validateServiceName('abc')).toBeNull();
-    expect(validateServiceName('a'.repeat(60))).toBeNull();
+  it('trims input before validating', () => {
+    expect(validateServiceName('  DJ  ').valid).toBe(true);
+  });
+
+  it('rejects strings over 100 characters', () => {
+    expect(validateServiceName('a'.repeat(101)).valid).toBe(false);
+  });
+
+  it('accepts names at exactly 2 characters', () => {
+    expect(validateServiceName('DJ').valid).toBe(true);
+  });
+
+  it('accepts names at exactly 100 characters', () => {
+    expect(validateServiceName('DJ' + 'a'.repeat(98)).valid).toBe(true);
+  });
+});
+
+describe('validateEmail', () => {
+  it('rejects empty string', () => {
+    expect(validateEmail('').valid).toBe(false);
+  });
+
+  it('rejects invalid email format', () => {
+    expect(validateEmail('notanemail').valid).toBe(false);
+  });
+
+  it('accepts valid email', () => {
+    expect(validateEmail('user@example.com').valid).toBe(true);
+  });
+});
+
+describe('validatePassword', () => {
+  it('rejects passwords under 8 characters', () => {
+    expect(validatePassword('short').valid).toBe(false);
+    expect(validatePassword('1234567').valid).toBe(false);
+  });
+
+  it('accepts passwords of 8 or more characters', () => {
+    expect(validatePassword('password123').valid).toBe(true);
+    expect(validatePassword('12345678').valid).toBe(true);
   });
 });

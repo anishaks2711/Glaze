@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { getPostSignupRedirect } from '@/lib/routing';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +28,7 @@ export default function Signup() {
     const { error } = await signUp(email, password, role, fullName);
     setLoading(false);
     if (error) { setError(error); return; }
-    navigate(role === 'freelancer' ? '/onboard' : '/', { replace: true });
+    navigate(getPostSignupRedirect(role), { replace: true });
   }
 
   return (

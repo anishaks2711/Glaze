@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { validateServiceName } from '@/lib/validation';
 
 interface Service {
   id: string;
@@ -28,8 +29,9 @@ export function useServices(freelancerId: string | undefined) {
 
   async function addService(name: string): Promise<string | null> {
     if (!freelancerId) return 'Not authenticated';
+    const validation = validateServiceName(name);
+    if (!validation.valid) return validation.error ?? 'Invalid service name';
     const trimmed = name.trim();
-    if (!trimmed) return 'Service name cannot be empty';
     const { data, error } = await supabase
       .from('freelancer_services')
       .insert({ freelancer_id: freelancerId, service_name: trimmed })
