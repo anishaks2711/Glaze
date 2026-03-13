@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play, Briefcase } from 'lucide-react';
 import { freelancers } from '@/data/mockData';
 import donutLogo from '@/assets/donut-logo.png';
 import ReelViewer from '@/components/ReelViewer';
+import { useServices } from '@/hooks/useServices';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/lib/supabase';
+import { UserMenu } from '@/components/UserMenu';
 
-type TabType = 'reviews' | 'portfolio' | 'client';
+type TabType = 'reviews' | 'portfolio' | 'client' | 'services';
 
 const FreelancerProfile = () => {
   const { id } = useParams();
@@ -14,7 +19,44 @@ const FreelancerProfile = () => {
   const [reelOpen, setReelOpen] = useState(false);
   const [reelStartIndex, setReelStartIndex] = useState(0);
 
-  const freelancer = freelancers.find((f) => f.id === id);
+  const mockFreelancer = freelancers.find((f) => f.id === id);
+  const { services: dbServices, loading: servicesLoading } = useServices(id);
+  const [realProfile, setRealProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(!mockFreelancer);
+
+  useEffect(() => {
+    if (mockFreelancer || !id) return;
+    setProfileLoading(true);
+    supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single()
+      .then(({ data }) => { setRealProfile(data); setProfileLoading(false); });
+  }, [id, mockFreelancer]);
+
+  const freelancer = mockFreelancer ?? (realProfile ? {
+    id: id!,
+    name: realProfile.full_name,
+    username: realProfile.full_name.toLowerCase().replace(/\s+/g, ''),
+    avatar: realProfile.avatar_url ?? '',
+    rating: 0,
+    location: '',
+    service: '',
+    bio: '',
+    postsCount: 0,
+    followers: 0,
+    following: 0,
+    reviewCount: 0,
+    tags: [],
+    reviews: [],
+    portfolio: [],
+    clientPosts: [],
+  } : null);
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   if (!freelancer) {
     return (
@@ -33,6 +75,7 @@ const FreelancerProfile = () => {
     { key: 'reviews', icon: Film, label: 'Reviews' },
     { key: 'portfolio', icon: Grid3X3, label: 'Portfolio' },
     { key: 'client', icon: Users, label: 'By Clients' },
+    { key: 'services', icon: Briefcase, label: 'Services' },
   ];
 
   const formatNumber = (n: number) => {
@@ -48,10 +91,14 @@ const FreelancerProfile = () => {
           <button onClick={() => navigate(-1)} className="p-1 text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <img src={donutLogo} alt="Glaze" className="h-7 w-7" />
-          <span className="font-heading text-lg font-bold text-foreground">
+          <Link to="/" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
+            <img src={donutLogo} alt="Glaze" className="h-7 w-7" />
+            <span className="text-sm font-medium text-muted-foreground">Home</span>
+          </Link>
+          <span className="font-heading text-lg font-bold text-foreground flex-1">
             @{freelancer.username}
           </span>
+          <UserMenu />
         </div>
       </header>
 
@@ -194,6 +241,25 @@ const FreelancerProfile = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Services Tab */}
+          {activeTab === 'services' && (
+            <div>
+              {servicesLoading ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">Loading services...</p>
+              ) : dbServices.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No services listed yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2 py-2">
+                  {dbServices.map(s => (
+                    <Badge key={s.id} variant="secondary" className="text-sm px-3 py-1">
+                      {s.service_name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import donutLogo from '@/assets/donut-logo.png';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -21,11 +22,15 @@ export default function Login() {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) { setError(error); return; }
-    navigate('/');
+    navigate('/', { replace: true });
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <Link to="/" className="flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
+        <img src={donutLogo} alt="Glaze" className="h-8 w-8" />
+        <span className="font-heading text-xl font-bold">Glaze</span>
+      </Link>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome back</CardTitle>

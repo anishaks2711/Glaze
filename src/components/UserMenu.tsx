@@ -11,15 +11,23 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function UserMenu() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   async function handleSignOut() {
     await signOut();
-    navigate('/login');
+    navigate('/login', { replace: true });
   }
 
-  if (!profile) return null;
+  if (!user) return null;
+
+  if (!profile) {
+    return (
+      <Button variant="ghost" size="sm" onClick={handleSignOut}>
+        Sign out
+      </Button>
+    );
+  }
 
   const initials = profile.full_name
     .split(' ')
