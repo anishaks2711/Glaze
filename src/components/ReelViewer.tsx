@@ -1,9 +1,18 @@
 import { X, Star, Heart, MessageCircle, Share2, Volume2 } from 'lucide-react';
-import { Review } from '@/data/mockData';
 import { useEffect, useRef, useState } from 'react';
 
+export interface ReviewItem {
+  id: string;
+  clientName: string;
+  clientAvatar: string;
+  rating: number;
+  text: string;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+}
+
 interface ReelViewerProps {
-  reviews: Review[];
+  reviews: ReviewItem[];
   startIndex: number;
   onClose: () => void;
 }
@@ -72,20 +81,37 @@ const ReelViewer = ({ reviews, startIndex, onClose }: ReelViewerProps) => {
             key={review.id}
             className="relative flex h-full w-full snap-start items-center justify-center"
           >
-            {/* Video Background Placeholder */}
-            <div
-              className="absolute inset-0 flex items-center justify-center"
-              style={{
-                background: `linear-gradient(135deg, hsl(${22 + idx * 15}, 80%, ${35 + idx * 5}%), hsl(${340 - idx * 10}, 70%, ${50 + idx * 3}%))`,
-              }}
-            >
-              <div className="text-center px-8">
-                <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-background/20 backdrop-blur-sm">
-                  <Volume2 className="h-10 w-10 text-background" />
+            {/* Media Background */}
+            {review.mediaUrl && review.mediaType === 'image' ? (
+              <img
+                src={review.mediaUrl}
+                alt="Review"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : review.mediaUrl && review.mediaType === 'video' ? (
+              <video
+                src={review.mediaUrl}
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${22 + idx * 15}, 80%, ${35 + idx * 5}%), hsl(${340 - idx * 10}, 70%, ${50 + idx * 3}%))`,
+                }}
+              >
+                <div className="text-center px-8">
+                  <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-background/20 backdrop-blur-sm">
+                    <Volume2 className="h-10 w-10 text-background" />
+                  </div>
+                  <p className="text-lg font-heading text-background/90">Video Review</p>
                 </div>
-                <p className="text-lg font-heading text-background/90">Video Review</p>
               </div>
-            </div>
+            )}
 
             {/* Right side actions */}
             <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 z-10">
@@ -115,11 +141,17 @@ const ReelViewer = ({ reviews, startIndex, onClose }: ReelViewerProps) => {
             {/* Bottom info */}
             <div className="absolute bottom-8 left-4 right-16 z-10">
               <div className="flex items-center gap-3 mb-3">
-                <img
-                  src={review.clientAvatar}
-                  alt={review.clientName}
-                  className="h-10 w-10 rounded-full bg-background/20"
-                />
+                {review.clientAvatar ? (
+                  <img
+                    src={review.clientAvatar}
+                    alt={review.clientName}
+                    className="h-10 w-10 rounded-full bg-background/20 object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-background/20 flex items-center justify-center text-background text-sm font-semibold">
+                    {review.clientName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="font-semibold text-background text-sm">{review.clientName}</p>
                   <div className="flex items-center gap-1">

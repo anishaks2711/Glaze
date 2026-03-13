@@ -28,8 +28,8 @@ const App = () => (
             <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
             <Route path="/onboard" element={<ProtectedRoute><FreelancerOnboard /></ProtectedRoute>} />
             <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/profile/:id" element={<ProtectedRoute><FreelancerProfile /></ProtectedRoute>} />
+            <Route path="/" element={<Index />} />
+            <Route path="/profile/:id" element={<FreelancerProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -1,9 +1,20 @@
 import { Star, TrendingUp } from 'lucide-react';
-import { Freelancer } from '@/data/mockData';
 import { useNavigate } from 'react-router-dom';
 
+export interface FreelancerCardData {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  service: string;
+  rating: number;
+  reviewCount: number;
+  location: string;
+  trending?: boolean;
+}
+
 interface FreelancerCardProps {
-  freelancer: Freelancer;
+  freelancer: FreelancerCardData;
   index: number;
 }
 
@@ -35,7 +46,7 @@ const FreelancerCard = ({ freelancer, index }: FreelancerCardProps) => {
           {freelancer.name}
         </h3>
         <p className="text-xs text-muted-foreground mb-2">@{freelancer.username}</p>
-        
+
         <span className="inline-block rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground mb-2">
           {freelancer.service}
         </span>

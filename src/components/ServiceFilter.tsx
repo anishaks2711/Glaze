@@ -1,14 +1,15 @@
 import { Search } from 'lucide-react';
-import { services } from '@/data/mockData';
+import { services as defaultServices } from '@/data/mockData';
 
 interface ServiceFilterProps {
   selectedService: string;
   onServiceChange: (service: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  services?: string[];
 }
 
-const ServiceFilter = ({ selectedService, onServiceChange, searchQuery, onSearchChange }: ServiceFilterProps) => {
+const ServiceFilter = ({ selectedService, onServiceChange, searchQuery, onSearchChange, services = defaultServices }: ServiceFilterProps) => {
   return (
     <div className="space-y-4">
       {/* Search Bar */}
