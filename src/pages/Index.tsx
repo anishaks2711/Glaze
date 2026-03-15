@@ -6,6 +6,9 @@ import ServiceFilter from '@/components/ServiceFilter';
 import { UserMenu } from '@/components/UserMenu';
 import { useFreelancers } from '@/hooks/useFreelancers';
 import { useAuth } from '@/hooks/useAuth';
+import { FREELANCER_CATEGORIES } from '@/lib/constants';
+
+const FILTER_CHIPS = ['All', ...FREELANCER_CATEGORIES];
 
 // "Photography" chip should match DB values like "Photographer", "Photography", etc.
 function categoryMatches(dbCategory: string | null, chip: string): boolean {
@@ -81,6 +84,7 @@ const Index = () => {
           onServiceChange={setSelectedService}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          services={FILTER_CHIPS}
         />
 
         {/* Results */}

@@ -52,7 +52,10 @@ export function usePortfolio(freelancerId: string | undefined) {
       .insert({ freelancer_id: freelancerId, image_url: publicUrl, caption: caption || null, display_order: order })
       .select('id, image_url, caption, display_order')
       .single();
-    if (insertError) return insertError.message;
+    if (insertError) {
+      console.error('[usePortfolio] insert error:', insertError.message);
+      return 'Failed to save photo. Please try again.';
+    }
     setPortfolio(prev => [...prev, data]);
     return null;
   }
@@ -62,7 +65,10 @@ export function usePortfolio(freelancerId: string | undefined) {
       .from('freelancer_portfolio')
       .delete()
       .eq('id', id);
-    if (error) return error.message;
+    if (error) {
+      console.error('[usePortfolio] delete error:', error.message);
+      return 'Failed to delete photo. Please try again.';
+    }
     setPortfolio(prev => prev.filter(p => p.id !== id));
     return null;
   }

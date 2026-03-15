@@ -18,6 +18,19 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+function mapAuthError(message: string): string {
+  if (message.includes('Invalid login credentials') || message.includes('invalid_credentials')) {
+    return 'Invalid email or password.';
+  }
+  if (message.includes('already registered') || message.includes('already been registered') || message.includes('User already registered')) {
+    return 'An account with this email already exists.';
+  }
+  if (message.includes('network') || message.includes('fetch') || message.includes('Failed to fetch')) {
+    return 'Connection error. Please try again.';
+  }
+  return 'An error occurred. Please try again.';
+}
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -52,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    return { error: error ? mapAuthError(error.message) : null };
   }
 
   async function signUp(email: string, password: string, role: 'freelancer' | 'client', fullName: string) {
@@ -65,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       fetchProfile(data.user.id);
     }
-    return { error: error?.message ?? null };
+    return { error: error ? mapAuthError(error.message) : null };
   }
 
   async function signOut() {

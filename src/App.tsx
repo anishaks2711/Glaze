@@ -13,6 +13,7 @@ import EditProfile from "./pages/EditProfile";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
+import { RoleRoute } from "./components/RoleRoute";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
-            <Route path="/onboard" element={<ProtectedRoute><FreelancerOnboard /></ProtectedRoute>} />
+            <Route path="/onboard" element={<ProtectedRoute><RoleRoute role="freelancer"><FreelancerOnboard /></RoleRoute></ProtectedRoute>} />
             <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/" element={<Index />} />
             <Route path="/profile/:id" element={<FreelancerProfile />} />

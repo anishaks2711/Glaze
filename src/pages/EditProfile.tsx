@@ -5,15 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { validateTagline } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import ServiceForm from '@/components/ServiceForm';
 import PortfolioManager from '@/components/PortfolioManager';
-
-const CATEGORIES = ['Baker', 'Makeup Artist', 'Photographer', 'DJ', 'Florist', 'Personal Chef', 'Other'];
+import ProfileBasicsForm from '@/components/profile/ProfileBasicsForm';
+import AvatarUpload from '@/components/profile/AvatarUpload';
+import AboutForm from '@/components/profile/AboutForm';
 
 export default function EditProfile() {
   const { user } = useAuth();
@@ -26,7 +24,6 @@ export default function EditProfile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [taglineError, setTaglineError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -45,16 +42,12 @@ export default function EditProfile() {
       });
   }, [user?.id]);
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-  }
-
   async function handleSave() {
     const taglineV = validateTagline(tagline);
-    if (!taglineV.valid) { setTaglineError(taglineV.error ?? 'Invalid tagline'); return; }
+    if (!taglineV.valid) {
+      toast({ title: 'Invalid tagline', description: taglineV.error, variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     let avatar_url: string | undefined;
     if (avatarFile && user?.id) {
@@ -62,16 +55,16 @@ export default function EditProfile() {
       const path = `${user.id}/avatar.${ext}`;
       const { error: uploadErr } = await supabase.storage
         .from('portfolio-media')
-        .upload(path, avatarFile, { upsert: true });
+        .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
       if (!uploadErr) {
         avatar_url = supabase.storage.from('portfolio-media').getPublicUrl(path).data.publicUrl;
       }
     }
-    const updates: Record<string, string> = {
+    const updates: Record<string, string | null> = {
       full_name: fullName.trim(),
-      tagline: tagline.trim(),
-      category,
-      location: location.trim(),
+      tagline: tagline.trim() || null,
+      category: category || null,
+      location: location.trim() || null,
     };
     if (avatar_url) updates.avatar_url = avatar_url;
     const { error } = await supabase.from('profiles').update(updates).eq('id', user!.id);
@@ -98,49 +91,18 @@ export default function EditProfile() {
         <Card>
           <CardHeader><CardTitle>Profile Info</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {avatarPreview && (
-              <img src={avatarPreview} alt="Avatar" className="h-20 w-20 rounded-full object-cover" />
-            )}
-            <div>
-              <Label htmlFor="avatar">Profile Photo</Label>
-              <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarChange} className="mt-1" />
-            </div>
-            <div>
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label htmlFor="tagline">Tagline</Label>
-              <Input
-                id="tagline"
-                value={tagline}
-                onChange={e => { setTagline(e.target.value); setTaglineError(null); }}
-                maxLength={150}
-                className="mt-1"
-                placeholder="e.g. 5-star baker in NYC"
-              />
-              {taglineError && <p className="text-sm text-destructive mt-1">{taglineError}</p>}
-              <p className="text-xs text-muted-foreground mt-1">{tagline.length}/150</p>
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                className="mt-1"
-                placeholder="e.g. New York, NY"
-              />
-            </div>
+            <AvatarUpload
+              previewUrl={avatarPreview}
+              onChange={(f, url) => { setAvatarFile(f); setAvatarPreview(url); }}
+            />
+            <ProfileBasicsForm
+              fullName={fullName} onFullNameChange={setFullName}
+              category={category} onCategoryChange={setCategory}
+            />
+            <AboutForm
+              tagline={tagline} onTaglineChange={setTagline}
+              location={location} onLocationChange={setLocation}
+            />
             <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>

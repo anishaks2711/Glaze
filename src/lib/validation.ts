@@ -37,3 +37,41 @@ export function validatePortfolioFile(file: File): { valid: boolean; error?: str
   if (file.size > 10 * 1024 * 1024) return { valid: false, error: 'File must be under 10MB.' };
   return { valid: true };
 }
+
+export function validateReviewRating(rating: number): { valid: boolean; error?: string } {
+  if (!Number.isInteger(rating)) return { valid: false, error: 'Rating must be a whole number.' };
+  if (rating < 1 || rating > 5) return { valid: false, error: 'Rating must be between 1 and 5.' };
+  return { valid: true };
+}
+
+export function validateReviewText(text: string): { valid: boolean; error?: string } {
+  if (text.length > 500) return { valid: false, error: 'Review text must be under 500 characters.' };
+  return { valid: true };
+}
+
+export function validateReviewFile(file: File): { valid: boolean; error?: string } {
+  if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    return { valid: false, error: 'File must be an image or video.' };
+  }
+  if (file.size > 50 * 1024 * 1024) return { valid: false, error: 'File must be under 50MB.' };
+  return { valid: true };
+}
+
+export function validateReviewVideo(file: File | null): { valid: boolean; error?: string } {
+  if (!file) return { valid: true };
+  if (!file.type.startsWith('video/')) return { valid: false, error: 'Video file must be a video.' };
+  if (file.size > 100 * 1024 * 1024) return { valid: false, error: 'Video must be under 100MB.' };
+  return { valid: true };
+}
+
+export function validateReviewPhoto(file: File | null): { valid: boolean; error?: string } {
+  if (!file) return { valid: true };
+  if (!file.type.startsWith('image/')) return { valid: false, error: 'Photo must be an image.' };
+  if (file.size > 10 * 1024 * 1024) return { valid: false, error: 'Photo must be under 10MB.' };
+  return { valid: true };
+}
+
+export function validateReviewCaption(caption: string): { valid: boolean; error?: string } {
+  if (caption.length > 150) return { valid: false, error: 'Caption must be under 150 characters.' };
+  return { valid: true };
+}

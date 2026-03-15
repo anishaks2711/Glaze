@@ -37,7 +37,10 @@ export function useServices(freelancerId: string | undefined) {
       .insert({ freelancer_id: freelancerId, service_name: trimmed })
       .select('id, service_name')
       .single();
-    if (error) return error.message;
+    if (error) {
+      console.error('[useServices] insert error:', error.message);
+      return 'Failed to add service. Please try again.';
+    }
     setServices(prev => [...prev, data]);
     return null;
   }
@@ -47,7 +50,10 @@ export function useServices(freelancerId: string | undefined) {
       .from('freelancer_services')
       .delete()
       .eq('id', id);
-    if (error) return error.message;
+    if (error) {
+      console.error('[useServices] delete error:', error.message);
+      return 'Failed to remove service. Please try again.';
+    }
     setServices(prev => prev.filter(s => s.id !== id));
     return null;
   }
