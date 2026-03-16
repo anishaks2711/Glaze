@@ -12,6 +12,7 @@ import PortfolioManager from '@/components/PortfolioManager';
 import ProfileBasicsForm from '@/components/profile/ProfileBasicsForm';
 import AvatarUpload from '@/components/profile/AvatarUpload';
 import AboutForm from '@/components/profile/AboutForm';
+import SocialLinksForm, { type SocialLinks } from '@/components/profile/SocialLinksForm';
 
 export default function EditProfile() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function EditProfile() {
   const [location, setLocation] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -32,13 +34,16 @@ export default function EditProfile() {
       .select('full_name, tagline, category, location, avatar_url')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!data) return;
         setFullName(data.full_name ?? '');
         setTagline(data.tagline ?? '');
         setCategory(data.category ?? '');
         setLocation(data.location ?? '');
         setAvatarPreview(data.avatar_url ?? null);
+        // Fetch social_links separately — gracefully skipped if column doesn't exist yet
+        const socialRes = await supabase.from('profiles').select('social_links').eq('id', user.id).single();
+        setSocialLinks((socialRes.data?.social_links as SocialLinks) ?? {});
       });
   }, [user?.id]);
 
@@ -60,7 +65,7 @@ export default function EditProfile() {
         avatar_url = supabase.storage.from('portfolio-media').getPublicUrl(path).data.publicUrl;
       }
     }
-    const updates: Record<string, string | null> = {
+    const updates: Record<string, unknown> = {
       full_name: fullName.trim(),
       tagline: tagline.trim() || null,
       category: category || null,
@@ -68,6 +73,8 @@ export default function EditProfile() {
     };
     if (avatar_url) updates.avatar_url = avatar_url;
     const { error } = await supabase.from('profiles').update(updates).eq('id', user!.id);
+    // Save social_links separately — silently skipped if migration hasn't run yet
+    await supabase.from('profiles').update({ social_links: socialLinks }).eq('id', user!.id);
     setSaving(false);
     if (error) {
       toast({ title: 'Save failed', description: 'Connection error. Please try again.', variant: 'destructive' });
@@ -103,6 +110,7 @@ export default function EditProfile() {
               tagline={tagline} onTaglineChange={setTagline}
               location={location} onLocationChange={setLocation}
             />
+            <SocialLinksForm value={socialLinks} onChange={setSocialLinks} />
             <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>

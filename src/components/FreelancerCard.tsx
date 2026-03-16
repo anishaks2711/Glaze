@@ -57,7 +57,7 @@ const FreelancerCard = ({ freelancer, index }: FreelancerCardProps) => {
           <span className="text-xs text-muted-foreground">({freelancer.reviewCount})</span>
         </div>
 
-        <p className="text-xs text-muted-foreground">{freelancer.location}</p>
+        <p className="text-xs text-muted-foreground">{freelancer.location || "New York"}</p>
       </div>
     </div>
   );

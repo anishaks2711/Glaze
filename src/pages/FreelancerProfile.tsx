@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play, Briefcase, Pencil, MoreVertical } from 'lucide-react';
+import { IconInstagram, IconTikTok, IconYouTube, IconX, IconLinkedIn, IconGlobe } from '@/components/profile/SocialIcons';
+import type { SocialLinks } from '@/components/profile/SocialLinksForm';
 import donutLogo from '@/assets/donut-logo.png';
 import ReelViewer, { ReviewItem } from '@/components/ReelViewer';
 import { useServices } from '@/hooks/useServices';
 import { usePortfolio } from '@/hooks/usePortfolio';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { supabase } from '@/lib/supabase';
 import { UserMenu } from '@/components/UserMenu';
 import { ReviewUpload } from '@/components/ReviewUpload';
@@ -38,6 +47,7 @@ interface DbProfile {
   tagline: string | null;
   category: string | null;
   location: string | null;
+  social_links: SocialLinks | null;
 }
 
 function formatDate(iso?: string): string {
@@ -120,7 +130,11 @@ const FreelancerProfile = () => {
             .order('has_video', { ascending: false })
             .order('created_at', { ascending: false }),
         ]);
-        if (profileRes.data) setProfile(profileRes.data);
+        if (profileRes.data) {
+          // Fetch social_links separately so a missing column doesn't break the profile page
+          const socialRes = await supabase.from('profiles').select('social_links').eq('id', id).single();
+          setProfile({ ...profileRes.data, social_links: (socialRes.data?.social_links as SocialLinks) ?? null });
+        }
         const reviews: ReviewItem[] = (reviewsRes.data ?? []).map((r: any) => ({
           id: r.id,
           clientId: r.client_id,
@@ -242,6 +256,28 @@ const FreelancerProfile = () => {
             </div>
           </div>
           {profile.tagline && <p className="mt-4 text-sm text-foreground">{profile.tagline}</p>}
+          {profile.social_links && Object.values(profile.social_links).some(Boolean) && (
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              {[
+                { key: 'instagram', icon: IconInstagram },
+                { key: 'tiktok',    icon: IconTikTok },
+                { key: 'youtube',   icon: IconYouTube },
+                { key: 'twitter',   icon: IconX },
+                { key: 'linkedin',  icon: IconLinkedIn },
+                { key: 'website',   icon: IconGlobe },
+              ].map(({ key, icon: Icon }) => {
+                const href = profile.social_links?.[key as keyof SocialLinks];
+                if (!href) return null;
+                const url = href.startsWith('http') ? href : `https://${href}`;
+                return (
+                  <a key={key} href={url} target="_blank" rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors">
+                    <Icon className="h-4 w-4" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
           <div className="flex items-center gap-6 mt-4 py-3 border-t border-b border-border">
             <div className="text-center">
               <p className="text-base font-bold text-foreground">{dbPortfolio.length}</p>
@@ -257,7 +293,7 @@ const FreelancerProfile = () => {
             </div>
             {canReview && id && (
               <div className="ml-auto">
-                <ReviewUpload freelancerId={id} freelancerName={profile.full_name} onReviewSubmitted={() => setRefreshKey(k => k + 1)} />
+                <ReviewUpload freelancerId={id} freelancerName={profile.full_name} freelancerAvatar={avatar} onReviewSubmitted={() => setRefreshKey(k => k + 1)} />
               </div>
             )}
           </div>
@@ -395,13 +431,32 @@ const FreelancerProfile = () => {
               {portfolioLoading ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">Loading portfolio...</p>
               ) : dbPortfolio.length > 0 ? (
-                <div className="grid grid-cols-3 gap-1">
-                  {dbPortfolio.map(item => (
-                    <div key={item.id} className="relative aspect-square overflow-hidden rounded-md bg-secondary">
-                      <img src={item.image_url} alt={item.caption ?? ''} className="h-full w-full object-cover" />
-                    </div>
-                  ))}
-                </div>
+                <Carousel opts={{ align: 'start', loop: true }} className="w-full">
+                  <CarouselContent className="-ml-3">
+                    {dbPortfolio.map(item => (
+                      <CarouselItem key={item.id} className="pl-3 basis-4/5 sm:basis-1/2">
+                        <div className="rounded-xl overflow-hidden border border-border bg-card">
+                          <div className="aspect-[4/3] overflow-hidden bg-secondary">
+                            <img
+                              src={item.image_url}
+                              alt={item.caption ?? ''}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="px-3 py-2.5">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {item.caption ?? 'Untitled'}
+                            </p>
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <div className="flex items-center justify-end gap-2 mt-3">
+                    <CarouselPrevious className="static translate-y-0" />
+                    <CarouselNext className="static translate-y-0" />
+                  </div>
+                </Carousel>
               ) : (
                 <p className="text-sm text-muted-foreground py-8 text-center">No portfolio photos yet.</p>
               )}

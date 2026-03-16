@@ -12,6 +12,7 @@ import ServiceForm from '@/components/ServiceForm';
 import ProfileBasicsForm from '@/components/profile/ProfileBasicsForm';
 import AvatarUpload from '@/components/profile/AvatarUpload';
 import AboutForm from '@/components/profile/AboutForm';
+import SocialLinksForm, { type SocialLinks } from '@/components/profile/SocialLinksForm';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -38,6 +39,7 @@ export default function FreelancerOnboard() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [tagline, setTagline] = useState('');
   const [location, setLocation] = useState('');
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
 
   useEffect(() => {
     if (!user?.id) return;
@@ -87,6 +89,8 @@ export default function FreelancerOnboard() {
     setSaving(true);
     const { error } = await supabase.from('profiles')
       .update({ tagline: tagline.trim() || null, location: location.trim() || null }).eq('id', user.id);
+    // Save social_links separately — silently skipped if migration hasn't run yet
+    await supabase.from('profiles').update({ social_links: socialLinks }).eq('id', user.id);
     setSaving(false);
     if (error) { toast({ title: 'Save failed', description: 'Connection error. Please try again.', variant: 'destructive' }); return; }
     setStep(4);
@@ -141,6 +145,7 @@ export default function FreelancerOnboard() {
           {step === 3 && (
             <>
               <AboutForm tagline={tagline} onTaglineChange={setTagline} location={location} onLocationChange={setLocation} />
+              <SocialLinksForm value={socialLinks} onChange={setSocialLinks} />
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(4)}>Skip</Button>
                 <Button className="flex-1" disabled={saving} onClick={saveStep3}>{saving ? 'Saving...' : 'Next'}</Button>

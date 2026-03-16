@@ -20,11 +20,13 @@ import {
   validateReviewPhoto,
 } from '@/lib/validation';
 import { ReviewCamera } from './ReviewCamera';
+import { ChatSidebar } from './ChatSidebar';
 import type { ReviewItem } from '@/components/ReelViewer';
 
 interface ReviewUploadProps {
   freelancerId: string;
   freelancerName?: string;
+  freelancerAvatar?: string;
   onReviewSubmitted?: () => void;
   // Edit mode: controlled open + existing data
   existingReview?: ReviewItem;
@@ -35,6 +37,7 @@ interface ReviewUploadProps {
 export function ReviewUpload({
   freelancerId,
   freelancerName,
+  freelancerAvatar,
   onReviewSubmitted,
   existingReview,
   open: controlledOpen,
@@ -66,6 +69,7 @@ export function ReviewUpload({
   const [captionError, setCaptionError] = useState<string | null>(null);
   const [textError, setTextError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Pre-fill form when edit dialog opens
   useEffect(() => {
@@ -276,13 +280,31 @@ export function ReviewUpload({
   );
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-      {!isControlled && (
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm">Leave a Review</Button>
-        </DialogTrigger>
-      )}
-      {dialogContent}
-    </Dialog>
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          onClick={() => setChatOpen(true)}
+        >
+          Message
+        </Button>
+        <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+          {!isControlled && (
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">Leave a Review</Button>
+            </DialogTrigger>
+          )}
+          {dialogContent}
+        </Dialog>
+      </div>
+      <ChatSidebar
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        freelancerId={freelancerId}
+        freelancerName={freelancerName ?? 'Freelancer'}
+        freelancerAvatar={freelancerAvatar}
+      />
+    </>
   );
 }
