@@ -32,8 +32,29 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up environment variables.
+# Create a .env.local file in the project root (gitignored — never commit it):
+#
+#   VITE_SUPABASE_URL=your_supabase_project_url
+#   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+#
+# Get these from a teammate or the Supabase dashboard under Project Settings → API.
+
+# Step 5: Apply database migrations.
+# In the Supabase SQL editor, run each file in order (skip any already applied):
+#   supabase/migrations/001_initial_schema.sql
+#   supabase/migrations/002_portfolio_and_profile_edit.sql
+#   supabase/migrations/003_reviews_new_columns.sql
+#   supabase/migrations/004_reviews_rls_update_delete.sql
+
+# Step 6: Start the development server with auto-reloading and an instant preview.
 npm run dev
+```
+
+**Running tests**
+
+```sh
+npx vitest run
 ```
 
 **Edit a file directly in GitHub**

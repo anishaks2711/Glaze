@@ -31,19 +31,17 @@ export default function EditProfile() {
     if (!user?.id) return;
     supabase
       .from('profiles')
-      .select('full_name, tagline, category, location, avatar_url')
+      .select('full_name, tagline, category, location, avatar_url, social_links')
       .eq('id', user.id)
       .single()
-      .then(async ({ data }) => {
+      .then(({ data }) => {
         if (!data) return;
         setFullName(data.full_name ?? '');
         setTagline(data.tagline ?? '');
         setCategory(data.category ?? '');
         setLocation(data.location ?? '');
         setAvatarPreview(data.avatar_url ?? null);
-        // Fetch social_links separately — gracefully skipped if column doesn't exist yet
-        const socialRes = await supabase.from('profiles').select('social_links').eq('id', user.id).single();
-        setSocialLinks((socialRes.data?.social_links as SocialLinks) ?? {});
+        setSocialLinks((data.social_links as SocialLinks) ?? {});
       });
   }, [user?.id]);
 
@@ -70,11 +68,10 @@ export default function EditProfile() {
       tagline: tagline.trim() || null,
       category: category || null,
       location: location.trim() || null,
+      social_links: socialLinks,
     };
     if (avatar_url) updates.avatar_url = avatar_url;
     const { error } = await supabase.from('profiles').update(updates).eq('id', user!.id);
-    // Save social_links separately — silently skipped if migration hasn't run yet
-    await supabase.from('profiles').update({ social_links: socialLinks }).eq('id', user!.id);
     setSaving(false);
     if (error) {
       toast({ title: 'Save failed', description: 'Connection error. Please try again.', variant: 'destructive' });

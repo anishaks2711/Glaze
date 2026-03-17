@@ -75,3 +75,15 @@ export function validateReviewCaption(caption: string): { valid: boolean; error?
   if (caption.length > 150) return { valid: false, error: 'Caption must be under 150 characters.' };
   return { valid: true };
 }
+
+export function validateSocialUrl(url: string): { valid: boolean; error?: string } {
+  const trimmed = url.trim();
+  if (!trimmed) return { valid: true }; // optional — empty is fine
+  if (!trimmed.startsWith('https://')) return { valid: false, error: 'Link must start with https://' };
+  try {
+    new URL(trimmed);
+  } catch {
+    return { valid: false, error: 'Please enter a valid URL.' };
+  }
+  return { valid: true };
+}
