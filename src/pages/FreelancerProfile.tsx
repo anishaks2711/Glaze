@@ -122,7 +122,7 @@ const FreelancerProfile = () => {
     const fetchAll = async () => {
       try {
         const [profileRes, reviewsRes] = await Promise.all([
-          supabase.from('profiles').select('full_name, avatar_url, tagline, category, location').eq('id', id).single(),
+          supabase.from('profiles').select('full_name, avatar_url, tagline, category, location, social_links').eq('id', id).single(),
           supabase
             .from('reviews')
             .select('id, client_id, rating, caption, text_content, media_url, media_type, photo_url, created_at, profiles!reviews_client_id_fkey(full_name, avatar_url)')
@@ -131,9 +131,7 @@ const FreelancerProfile = () => {
             .order('created_at', { ascending: false }),
         ]);
         if (profileRes.data) {
-          // Fetch social_links separately so a missing column doesn't break the profile page
-          const socialRes = await supabase.from('profiles').select('social_links').eq('id', id).single();
-          setProfile({ ...profileRes.data, social_links: (socialRes.data?.social_links as SocialLinks) ?? null });
+          setProfile({ ...profileRes.data, social_links: (profileRes.data.social_links as SocialLinks) ?? null });
         }
         const reviews: ReviewItem[] = (reviewsRes.data ?? []).map((r: any) => ({
           id: r.id,

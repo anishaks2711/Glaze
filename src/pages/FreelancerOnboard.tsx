@@ -88,9 +88,7 @@ export default function FreelancerOnboard() {
     if (!user?.id) return;
     setSaving(true);
     const { error } = await supabase.from('profiles')
-      .update({ tagline: tagline.trim() || null, location: location.trim() || null }).eq('id', user.id);
-    // Save social_links separately — silently skipped if migration hasn't run yet
-    await supabase.from('profiles').update({ social_links: socialLinks }).eq('id', user.id);
+      .update({ tagline: tagline.trim() || null, location: location.trim() || null, social_links: socialLinks }).eq('id', user.id);
     setSaving(false);
     if (error) { toast({ title: 'Save failed', description: 'Connection error. Please try again.', variant: 'destructive' }); return; }
     setStep(4);
