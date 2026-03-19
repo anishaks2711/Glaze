@@ -19,7 +19,9 @@ import { supabase } from '@/lib/supabase';
 import { UserMenu } from '@/components/UserMenu';
 import { ReviewUpload } from '@/components/ReviewUpload';
 import { ReviewDetailModal } from '@/components/ReviewDetailModal';
-import { deleteReview } from '@/hooks/useReviews';
+import { deleteReview, getMyReview } from '@/hooks/useReviews';
+import type { Review } from '@/hooks/useReviews';
+import { GlazeFlow } from '@/components/GlazeFlow';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +116,7 @@ const FreelancerProfile = () => {
 
   const [profile, setProfile] = useState<DbProfile | null>(null);
   const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
+  const [myReview, setMyReview] = useState<Review | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
   const { services: dbServices, loading: servicesLoading } = useServices(id);
@@ -126,7 +129,9 @@ const FreelancerProfile = () => {
     setProfileLoading(true);
     const fetchAll = async () => {
       try {
-        const [profileRes, reviewsRes] = await Promise.all([
+        const clientId = user?.id;
+      const isClientUser = authProfile?.role === 'client' && clientId && clientId !== id;
+      const [profileRes, reviewsRes, myReviewData] = await Promise.all([
           supabase
             .from('profiles')
             .select('full_name, avatar_url, tagline, category, location, is_shy, review_prompt, social_links, verified_instagram, verified_linkedin, verified_identity')
@@ -138,7 +143,9 @@ const FreelancerProfile = () => {
             .eq('freelancer_id', id)
             .order('has_video', { ascending: false })
             .order('created_at', { ascending: false }),
+          isClientUser ? getMyReview(id, clientId) : Promise.resolve(null),
         ]);
+      setMyReview(myReviewData ?? null);
         if (profileRes.data) {
           setProfile({
             ...profileRes.data,
@@ -349,6 +356,8 @@ const FreelancerProfile = () => {
                   freelancerId={id}
                   freelancerName={profile.full_name}
                   freelancerAvatar={avatar}
+                  reviewPrompt={profile.review_prompt}
+                  myReview={myReview}
                   onReviewSubmitted={() => setRefreshKey(k => k + 1)}
                 />
               </div>
@@ -568,14 +577,14 @@ const FreelancerProfile = () => {
         <ReviewDetailModal review={detailReview} onClose={() => setDetailReview(null)} />
       )}
 
-      {/* Edit Glaze dialog (controlled) */}
+      {/* Edit Glaze flow (full-screen) */}
       {editingReview && id && (
-        <ReviewUpload
+        <GlazeFlow
           freelancerId={id}
+          freelancerName={profile.full_name}
           existingReview={editingReview}
-          open={!!editingReview}
-          onOpenChange={v => { if (!v) setEditingReview(null); }}
-          onReviewSubmitted={() => { setEditingReview(null); setRefreshKey(k => k + 1); }}
+          onClose={() => setEditingReview(null)}
+          onSubmitted={() => { setEditingReview(null); setRefreshKey(k => k + 1); }}
         />
       )}
 

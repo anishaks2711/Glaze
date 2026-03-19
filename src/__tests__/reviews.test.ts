@@ -8,7 +8,7 @@ import {
   validateReviewPhoto,
   validateReviewCaption,
 } from '@/lib/validation';
-import { useReviews, updateReview, deleteReview } from '@/hooks/useReviews';
+import { useReviews, updateReview, deleteReview, getMyReview } from '@/hooks/useReviews';
 
 // ─── validateReviewRating ──────────────────────────────────────────────────────
 
@@ -125,7 +125,9 @@ function makeBuilder(resolveValue: unknown) {
   builder.delete = vi.fn().mockReturnValue(builder);
   builder.eq = vi.fn().mockReturnValue(builder);
   builder.order = vi.fn().mockReturnValue(builder);
+  builder.limit = vi.fn().mockReturnValue(builder);
   builder.single = vi.fn().mockResolvedValue(resolveValue);
+  builder.maybeSingle = vi.fn().mockResolvedValue(resolveValue);
   (builder as { then: (r: (v: unknown) => unknown, j?: (e: unknown) => unknown) => Promise<unknown> }).then =
     (resolve, reject) => Promise.resolve(resolveValue).then(resolve, reject);
   return builder;
@@ -225,42 +227,28 @@ describe('useReviews', () => {
     expect(mockStorageFrom).not.toHaveBeenCalled();
   });
 
-  it('submitReview succeeds with rating only (no video)', async () => {
+  // Updated: video is now required — submitReview without video returns an error
+  it('submitReview requires video (rejects null video)', async () => {
     const fetchBuilder = makeBuilder({ data: [], error: null });
-    const insertBuilder = makeBuilder({
-      data: {
-        id: 'review-1',
-        freelancer_id: 'freelancer-1',
-        client_id: 'client-1',
-        rating: 5,
-        caption: null,
-        text_content: 'Amazing!',
-        media_url: null,
-        media_type: null,
-        photo_url: null,
-        has_video: false,
-        created_at: new Date().toISOString(),
-      },
-      error: null,
-    });
-
-    mockFrom.mockReturnValueOnce(fetchBuilder).mockReturnValueOnce(insertBuilder);
+    mockFrom.mockReturnValue(fetchBuilder);
 
     const { result } = renderHook(() => useReviews('freelancer-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.clearAllMocks();
 
     let err: string | null = 'not-called';
     await act(async () => {
       err = await result.current.submitReview({ clientId: 'client-1', rating: 5, textContent: 'Amazing!' });
     });
 
-    expect(err).toBeNull();
-    expect(insertBuilder.insert).toHaveBeenCalled();
-    expect(result.current.reviews).toHaveLength(1);
+    expect(err).not.toBeNull();
+    expect(mockFrom).not.toHaveBeenCalled(); // no DB call — validation fails fast
   });
 
   it('submitReview succeeds with rating + video', async () => {
     const fetchBuilder = makeBuilder({ data: [], error: null });
+    // duplicate check returns null (no existing review)
+    const dupCheckBuilder = makeBuilder({ data: null, error: null });
     const insertBuilder = makeBuilder({
       data: {
         id: 'review-2',
@@ -278,7 +266,10 @@ describe('useReviews', () => {
       error: null,
     });
 
-    mockFrom.mockReturnValueOnce(fetchBuilder).mockReturnValueOnce(insertBuilder);
+    mockFrom
+      .mockReturnValueOnce(fetchBuilder)   // useEffect fetch
+      .mockReturnValueOnce(dupCheckBuilder) // duplicate check (.maybeSingle)
+      .mockReturnValueOnce(insertBuilder);  // insert
 
     const { result } = renderHook(() => useReviews('freelancer-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -294,6 +285,80 @@ describe('useReviews', () => {
     expect(mockStorageFrom).toHaveBeenCalledWith('review-media');
     expect(result.current.reviews).toHaveLength(1);
     expect(result.current.reviews[0].has_video).toBe(true);
+  });
+
+  it('submitReview rejects duplicate (same client + freelancer)', async () => {
+    const fetchBuilder = makeBuilder({ data: [], error: null });
+    // duplicate check finds existing review
+    const dupCheckBuilder = makeBuilder({ data: { id: 'existing-review' }, error: null });
+    mockFrom
+      .mockReturnValueOnce(fetchBuilder)
+      .mockReturnValueOnce(dupCheckBuilder);
+
+    const { result } = renderHook(() => useReviews('freelancer-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const videoFile = new File(['data'], 'review.mp4', { type: 'video/mp4' });
+
+    let err: string | null = 'not-called';
+    await act(async () => {
+      err = await result.current.submitReview({ clientId: 'client-1', rating: 4, videoFile });
+    });
+
+    expect(err).toContain("You've already Glazed");
+    expect(mockStorageFrom).not.toHaveBeenCalled(); // no upload attempted
+  });
+});
+
+// ─── getMyReview ───────────────────────────────────────────────────────────────
+
+describe('getMyReview', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the review if one exists for the client+freelancer pair', async () => {
+    const review = {
+      id: 'review-1',
+      freelancer_id: 'fl-1',
+      client_id: 'cl-1',
+      rating: 5,
+      caption: 'Amazing!',
+      text_content: null,
+      media_url: null,
+      media_type: null,
+      photo_url: null,
+      has_video: false,
+      created_at: new Date().toISOString(),
+    };
+    const builder = makeBuilder({ data: review, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('review-1');
+    expect(result?.rating).toBe(5);
+    expect(builder.eq).toHaveBeenCalledWith('freelancer_id', 'fl-1');
+    expect(builder.eq).toHaveBeenCalledWith('client_id', 'cl-1');
+  });
+
+  it('returns null if no review exists', async () => {
+    const builder = makeBuilder({ data: null, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null on error', async () => {
+    const builder = makeBuilder({ data: null, error: { message: 'DB error' } });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).toBeNull();
   });
 });
 

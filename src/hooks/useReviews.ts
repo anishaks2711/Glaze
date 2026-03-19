@@ -24,6 +24,7 @@ export interface UpdateReviewParams {
   keepExistingPhoto: boolean;
   currentMediaUrl: string | null;
   currentPhotoUrl: string | null;
+  onProgress?: (msg: string) => void;
 }
 
 export async function updateReview(
@@ -56,10 +57,20 @@ export async function updateReview(
   if (params.newVideoFile) {
     const ext = params.newVideoFile.name.split('.').pop() ?? 'webm';
     const path = `${freelancerId}/${reviewId}.${ext}`;
-    const { error } = await supabase.storage
-      .from('review-media')
-      .upload(path, params.newVideoFile, { contentType: params.newVideoFile.type, upsert: true });
-    if (error) return 'Upload failed. Please try again.';
+    const sizeMB = (params.newVideoFile.size / 1024 / 1024).toFixed(1);
+    console.log('[updateReview] uploading video to', path, `(${sizeMB}MB)`);
+    params.onProgress?.(`Uploading video (${sizeMB}MB)...`);
+    let uploadErr: { message: string } | null = null;
+    try {
+      const { error } = await supabase.storage
+        .from('review-media')
+        .upload(path, params.newVideoFile, { contentType: params.newVideoFile.type, upsert: true });
+      uploadErr = error;
+    } catch (e: unknown) {
+      console.error('[updateReview] video upload threw:', e);
+      return e instanceof Error ? e.message : 'Upload failed. Please try again.';
+    }
+    if (uploadErr) return 'Upload failed. Please try again.';
     finalMediaUrl = supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl;
     hasVideo = true;
     if (params.currentMediaUrl) {
@@ -78,10 +89,18 @@ export async function updateReview(
   if (params.newPhotoFile) {
     const ext = params.newPhotoFile.name.split('.').pop() ?? 'jpg';
     const path = `${freelancerId}/${reviewId}-photo.${ext}`;
-    const { error } = await supabase.storage
-      .from('review-media')
-      .upload(path, params.newPhotoFile, { contentType: params.newPhotoFile.type, upsert: true });
-    if (error) return 'Photo upload failed. Please try again.';
+    params.onProgress?.('Uploading photo...');
+    let photoErr: { message: string } | null = null;
+    try {
+      const { error } = await supabase.storage
+        .from('review-media')
+        .upload(path, params.newPhotoFile, { contentType: params.newPhotoFile.type, upsert: true });
+      photoErr = error;
+    } catch (e: unknown) {
+      console.error('[updateReview] photo upload threw:', e);
+      return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
+    }
+    if (photoErr) return 'Photo upload failed. Please try again.';
     finalPhotoUrl = supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl;
     if (params.currentPhotoUrl) {
       const old = getStoragePath(params.currentPhotoUrl);
@@ -94,6 +113,7 @@ export async function updateReview(
     if (old) await supabase.storage.from('review-media').remove([old]);
   }
 
+  params.onProgress?.('Saving your Glaze...');
   const { error } = await supabase
     .from('reviews')
     .update({
@@ -162,10 +182,28 @@ interface SubmitParams {
   textContent?: string;
   videoFile?: File | null;
   photoFile?: File | null;
+  onProgress?: (msg: string) => void;
 }
 
 const SELECT_FIELDS =
   'id, freelancer_id, client_id, rating, caption, text_content, media_url, media_type, photo_url, has_video, created_at';
+
+export async function getMyReview(
+  freelancerId: string,
+  clientId: string,
+): Promise<Review | null> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select(SELECT_FIELDS)
+    .eq('freelancer_id', freelancerId)
+    .eq('client_id', clientId)
+    .maybeSingle();
+  if (error) {
+    console.error('[getMyReview] error:', error.message);
+    return null;
+  }
+  return data as Review | null;
+}
 
 export function useReviews(freelancerId: string | undefined) {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -195,11 +233,14 @@ export function useReviews(freelancerId: string | undefined) {
     textContent = '',
     videoFile,
     photoFile,
+    onProgress,
   }: SubmitParams): Promise<string | null> {
     if (!freelancerId) return 'Not authenticated';
 
     const ratingCheck = validateReviewRating(rating);
     if (!ratingCheck.valid) return ratingCheck.error!;
+
+    if (!videoFile) return 'A video Glaze is required.';
 
     if (caption) {
       const captionCheck = validateReviewCaption(caption);
@@ -217,6 +258,17 @@ export function useReviews(freelancerId: string | undefined) {
     const photoCheck = validateReviewPhoto(photoFile ?? null);
     if (!photoCheck.valid) return photoCheck.error!;
 
+    // Check for duplicate before uploading
+    const { data: existing } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('freelancer_id', freelancerId)
+      .eq('client_id', clientId)
+      .maybeSingle();
+    if (existing) {
+      return "You've already Glazed this freelancer. You can edit your existing Glaze.";
+    };
+
     const reviewId = crypto.randomUUID();
     let mediaUrl: string | null = null;
     let photoUrl: string | null = null;
@@ -224,12 +276,20 @@ export function useReviews(freelancerId: string | undefined) {
     if (videoFile) {
       const ext = videoFile.name.split('.').pop() ?? 'webm';
       const path = `${freelancerId}/${reviewId}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('review-media')
-        .upload(path, videoFile, { contentType: videoFile.type, upsert: false });
-      if (uploadError) {
-        console.error('[useReviews] video upload error:', uploadError.message);
-        return 'Upload failed. Please try again.';
+      const sizeMB = (videoFile.size / 1024 / 1024).toFixed(1);
+      console.log('[useReviews] uploading video to', path, `(${sizeMB}MB)`);
+      onProgress?.(`Uploading video (${sizeMB}MB)...`);
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('review-media')
+          .upload(path, videoFile, { contentType: videoFile.type, upsert: false });
+        if (uploadError) {
+          console.error('[useReviews] video upload error:', uploadError.message);
+          return 'Upload failed. Please try again.';
+        }
+      } catch (e: unknown) {
+        console.error('[useReviews] video upload threw:', e);
+        return e instanceof Error ? e.message : 'Upload failed. Please try again.';
       }
       const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(path);
       mediaUrl = publicUrl;
@@ -238,16 +298,24 @@ export function useReviews(freelancerId: string | undefined) {
     if (photoFile) {
       const ext = photoFile.name.split('.').pop() ?? 'jpg';
       const path = `${freelancerId}/${reviewId}-photo.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('review-media')
-        .upload(path, photoFile, { contentType: photoFile.type, upsert: false });
-      if (uploadError) {
-        console.error('[useReviews] photo upload error:', uploadError.message);
-        return 'Photo upload failed. Please try again.';
+      onProgress?.('Uploading photo...');
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('review-media')
+          .upload(path, photoFile, { contentType: photoFile.type, upsert: false });
+        if (uploadError) {
+          console.error('[useReviews] photo upload error:', uploadError.message);
+          return 'Photo upload failed. Please try again.';
+        }
+      } catch (e: unknown) {
+        console.error('[useReviews] photo upload threw:', e);
+        return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
       }
       const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(path);
       photoUrl = publicUrl;
     }
+
+    onProgress?.('Saving your Glaze...');
 
     const { data, error: insertError } = await supabase
       .from('reviews')
@@ -268,6 +336,9 @@ export function useReviews(freelancerId: string | undefined) {
 
     if (insertError) {
       console.error('[useReviews] insert error:', insertError.message);
+      if ((insertError as { code?: string }).code === '23505') {
+        return "You've already Glazed this freelancer. You can edit your existing Glaze.";
+      }
       return 'Failed to submit review. Please try again.';
     }
 
