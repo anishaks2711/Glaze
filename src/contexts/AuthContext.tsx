@@ -29,6 +29,13 @@ function mapAuthError(message: string): string {
   if (message.includes('network') || message.includes('fetch') || message.includes('Failed to fetch')) {
     return 'Connection error. Please try again.';
   }
+  if (message.includes('Password should be at least') || message.includes('password') && message.includes('characters')) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (message.includes('signup_disabled') || message.includes('Signups not allowed')) {
+    return 'Sign-ups are temporarily disabled. Please try again later.';
+  }
+  console.error('[mapAuthError] unhandled Supabase error:', message);
   return 'An error occurred. Please try again.';
 }
 
@@ -76,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { role, full_name: fullName } },
     });
     // Do NOT fetchProfile here — no profile row exists until onboarding completes.
+    if (error) console.error('[signUp] raw error:', error.message);
     if (!error && data.user) {
       setUser(data.user);
     }

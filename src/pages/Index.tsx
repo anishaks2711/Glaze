@@ -6,9 +6,7 @@ import ServiceFilter from '@/components/ServiceFilter';
 import { UserMenu } from '@/components/UserMenu';
 import { useFreelancers } from '@/hooks/useFreelancers';
 import { useAuth } from '@/hooks/useAuth';
-import { FREELANCER_CATEGORIES } from '@/lib/constants';
-
-const FILTER_CHIPS = ['All', ...FREELANCER_CATEGORIES];
+import { supabase } from '@/lib/supabase';
 
 // "Photography" chip should match DB values like "Photographer", "Photography", etc.
 function categoryMatches(dbCategory: string | null, chip: string): boolean {
@@ -26,7 +24,26 @@ const Index = () => {
   const [selectedService, setSelectedService] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
   const { user } = useAuth();
+
+  // Load all distinct categories from the DB once on mount (unaffected by search)
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('category')
+      .eq('role', 'freelancer')
+      .eq('is_public', true)
+      .not('category', 'is', null)
+      .then(({ data }) => {
+        if (data) {
+          const cats = [...new Set(data.map((p: any) => p.category as string))].sort();
+          setDbCategories(cats);
+        }
+      });
+  }, []);
+
+  const filterChips = useMemo(() => ['All', ...dbCategories], [dbCategories]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -84,7 +101,7 @@ const Index = () => {
           onServiceChange={setSelectedService}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          services={FILTER_CHIPS}
+          services={filterChips}
         />
 
         {/* Results */}

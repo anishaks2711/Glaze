@@ -23,6 +23,7 @@ export default function Signup() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!role) { setError('Please select a role.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError(null);
     setLoading(true);
     const { error } = await signUp(email, password, role, fullName);

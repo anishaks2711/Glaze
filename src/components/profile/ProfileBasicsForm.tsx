@@ -31,6 +31,7 @@ export default function ProfileBasicsForm({
 }: Props) {
   const touchedRef = useRef(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [isOther, setIsOther] = useState(() => !!category && !PREDEFINED.includes(category as never));
 
   // Auto-generate username from fullName until user manually edits it (only when onUsernameChange is provided)
   useEffect(() => {
@@ -46,16 +47,16 @@ export default function ProfileBasicsForm({
     setUsernameError(r.valid ? null : (r.error ?? null));
   }
 
-  // Determine dropdown value: if category is a predefined option, show it; else "Other"
-  const dropdownValue = PREDEFINED.includes(category as never) ? category : (category ? 'Other' : '');
-  const showOtherInput = dropdownValue === 'Other';
+  const dropdownValue = isOther ? 'Other' : (PREDEFINED.includes(category as never) ? category : '');
+  const showOtherInput = isOther;
 
   function handleDropdownChange(v: string) {
     if (v !== 'Other') {
+      setIsOther(false);
       onCategoryChange(v);
     } else {
-      // Keep whatever is in the other input (or empty)
-      onCategoryChange(showOtherInput ? category : '');
+      setIsOther(true);
+      onCategoryChange('');
     }
   }
 
@@ -101,8 +102,8 @@ export default function ProfileBasicsForm({
         {showOtherInput && (
           <Input
             className="mt-2"
-            placeholder="Describe your category (e.g. Tattoo Artist)"
-            value={PREDEFINED.includes(category as never) ? '' : category}
+            placeholder="Enter your category (e.g. Calligrapher)"
+            value={category}
             onChange={e => onCategoryChange(e.target.value)}
             maxLength={50}
           />
