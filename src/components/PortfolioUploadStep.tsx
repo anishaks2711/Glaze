@@ -15,9 +15,14 @@ interface Props {
   freelancerId: string;
   onSkip: () => void;
   onDone: () => void;
+  /**
+   * Collect mode (onboarding): instead of uploading to the DB, pass selected
+   * photos back to the parent.  Both Skip (empty array) and Continue use this.
+   */
+  onCollect?: (photos: { file: File; caption: string | null }[]) => void;
 }
 
-export default function PortfolioUploadStep({ freelancerId, onSkip, onDone }: Props) {
+export default function PortfolioUploadStep({ freelancerId, onSkip, onDone, onCollect }: Props) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +49,11 @@ export default function PortfolioUploadStep({ freelancerId, onSkip, onDone }: Pr
   }
 
   async function handleUpload() {
+    // Collect mode: hand photos to parent; no DB writes here.
+    if (onCollect) {
+      onCollect(photos.map(p => ({ file: p.file, caption: p.caption || null })));
+      return;
+    }
     if (photos.length === 0) { onDone(); return; }
     setUploading(true);
     setError(null);
@@ -97,7 +107,7 @@ export default function PortfolioUploadStep({ freelancerId, onSkip, onDone }: Pr
         </div>
       )}
       <div className="flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onSkip} disabled={uploading}>
+        <Button variant="outline" className="flex-1" onClick={() => onCollect ? onCollect([]) : onSkip()} disabled={uploading}>
           Skip
         </Button>
         <Button className="flex-1" onClick={handleUpload} disabled={uploading}>

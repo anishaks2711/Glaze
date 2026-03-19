@@ -2,6 +2,7 @@
 export const FREELANCER_CATEGORIES = [
   'Baker',
   'DJ',
+  'Emcee',
   'Event Planner',
   'Florist',
   'Hair Stylist',

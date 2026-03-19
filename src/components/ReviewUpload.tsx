@@ -159,7 +159,7 @@ export function ReviewUpload({
 
     setSubmitting(false);
     if (err) { toast({ title: 'Error', description: err, variant: 'destructive' }); return; }
-    toast({ title: isEditMode ? 'Review updated!' : 'Review submitted!', description: 'Thank you for your review.' });
+    toast({ title: isEditMode ? 'Glaze updated!' : 'Glaze submitted!', description: 'Thank you for your Glaze.' });
     resetForm();
     handleOpenChange(false);
     onReviewSubmitted?.();
@@ -173,7 +173,7 @@ export function ReviewUpload({
     <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>
-          {isEditMode ? 'Edit Review' : (freelancerName ? `Review ${freelancerName}` : 'Leave a Review')}
+          {isEditMode ? 'Edit Glaze' : (freelancerName ? `Glaze ${freelancerName}` : 'Leave a Glaze')}
         </DialogTitle>
       </DialogHeader>
       <div className="space-y-5 pb-2">
@@ -181,7 +181,7 @@ export function ReviewUpload({
         <div className="rounded-xl border-2 border-dashed border-border p-4 space-y-3">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Video className="h-4 w-4" />
-            <span className="text-sm font-medium">Add a Video Review</span>
+            <span className="text-sm font-medium">Add a Video Glaze</span>
             <span className="text-xs ml-auto opacity-60">optional</span>
           </div>
           {showVideoPreview ? (
@@ -273,7 +273,7 @@ export function ReviewUpload({
         <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
           {submitting
             ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {isEditMode ? 'Updating...' : 'Uploading...'}</>
-            : isEditMode ? 'Update Review' : 'Submit Review'}
+            : isEditMode ? 'Update Glaze' : 'Submit Glaze'}
         </Button>
       </div>
     </DialogContent>
@@ -292,7 +292,7 @@ export function ReviewUpload({
         <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
           {!isControlled && (
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Leave a Review</Button>
+              <Button variant="outline" size="sm">Leave a Glaze</Button>
             </DialogTrigger>
           )}
           {dialogContent}

@@ -71,8 +71,31 @@ export function validateReviewPhoto(file: File | null): { valid: boolean; error?
   return { valid: true };
 }
 
+export function validateUsername(username: string): { valid: boolean; error?: string } {
+  const trimmed = username.trim().toLowerCase();
+  if (!trimmed) return { valid: false, error: 'Username cannot be empty.' };
+  if (trimmed.length < 3) return { valid: false, error: 'Username must be at least 3 characters.' };
+  if (trimmed.length > 30) return { valid: false, error: 'Username must be under 30 characters.' };
+  if (!/^[a-z0-9._-]+$/.test(trimmed)) return { valid: false, error: 'Only letters, numbers, dots, underscores, and hyphens allowed.' };
+  return { valid: true };
+}
+
+export function validateReviewPrompt(text: string): { valid: boolean; error?: string } {
+  if (text.length > 500) return { valid: false, error: 'Prompt must be under 500 characters.' };
+  return { valid: true };
+}
+
 export function validateReviewCaption(caption: string): { valid: boolean; error?: string } {
   if (caption.length > 150) return { valid: false, error: 'Caption must be under 150 characters.' };
+  return { valid: true };
+}
+
+export function validateCategory(category: string): { valid: boolean; error?: string } {
+  const trimmed = category.trim();
+  if (!trimmed) return { valid: false, error: 'Category is required.' };
+  if (trimmed.length < 2) return { valid: false, error: 'Category must be at least 2 characters.' };
+  if (trimmed.length > 50) return { valid: false, error: 'Category must be under 50 characters.' };
+  if (!/[a-zA-Z]/.test(trimmed)) return { valid: false, error: 'Category must contain letters.' };
   return { valid: true };
 }
 
