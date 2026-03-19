@@ -32,7 +32,7 @@ export default function SocialLinksForm({ value, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <Label>Social Links <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+      <Label>Social Links</Label>
       {PLATFORMS.map(({ key, label, icon: Icon, placeholder }) => (
         <div key={key} className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-muted-foreground shrink-0" />

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 import PortfolioUploadStep from '@/components/PortfolioUploadStep';
 import ServiceForm from '@/components/ServiceForm';
 import ProfileBasicsForm from '@/components/profile/ProfileBasicsForm';
@@ -22,7 +22,7 @@ const STEP_TITLES: Record<Step, string> = {
 const STEP_DESCS: Record<Step, string> = {
   1: 'Tell clients who you are. Category is required.',
   2: 'Add a profile photo so clients can recognise you.',
-  3: 'A tagline and location help clients find you.',
+  3: 'A tagline and location help clients find you. At least one social link is required.',
   4: 'Add the services clients can book you for.',
   5: 'Show clients your best work.',
 };
@@ -86,6 +86,11 @@ export default function FreelancerOnboard() {
 
   async function saveStep3() {
     if (!user?.id) return;
+    const hasLink = Object.values(socialLinks).some(v => v && v.trim());
+    if (!hasLink) {
+      toast({ title: 'Social link required', description: 'Please add at least one social link for verification.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles')
       .update({ tagline: tagline.trim() || null, location: location.trim() || null, social_links: socialLinks }).eq('id', user.id);
@@ -107,8 +112,8 @@ export default function FreelancerOnboard() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8">
       <Link to="/" className="flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity cursor-pointer">
-        <img src={donutLogo} alt="Glaze" className="h-8 w-8" />
-        <span className="font-heading text-xl font-bold">Glaze</span>
+        <img src={donutLogo} alt="Glaze" className="h-12 w-12" />
+        <span className="font-fredoka text-xl font-bold">Glaze</span>
         <Home className="h-4 w-4 text-muted-foreground ml-1" />
       </Link>
       <Card className="w-full max-w-md">
@@ -144,10 +149,8 @@ export default function FreelancerOnboard() {
             <>
               <AboutForm tagline={tagline} onTaglineChange={setTagline} location={location} onLocationChange={setLocation} />
               <SocialLinksForm value={socialLinks} onChange={setSocialLinks} />
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(4)}>Skip</Button>
-                <Button className="flex-1" disabled={saving} onClick={saveStep3}>{saving ? 'Saving...' : 'Next'}</Button>
-              </div>
+              <p className="text-xs text-muted-foreground">At least one social link is required for verification.</p>
+              <Button className="w-full" disabled={saving} onClick={saveStep3}>{saving ? 'Saving...' : 'Next'}</Button>
             </>
           )}
           {step === 4 && user?.id && (

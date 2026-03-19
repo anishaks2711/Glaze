@@ -282,21 +282,21 @@ export function ReviewUpload({
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={() => setChatOpen(true)}
-        >
-          Message
-        </Button>
         <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
           {!isControlled && (
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Leave a Review</Button>
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">Glaze</Button>
             </DialogTrigger>
           )}
           {dialogContent}
         </Dialog>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setChatOpen(true)}
+        >
+          Message
+        </Button>
       </div>
       <ChatSidebar
         open={chatOpen}

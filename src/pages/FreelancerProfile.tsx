@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Grid3X3, Film, Users, Play, Briefcase, Pencil, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Grid3X3, Users, Play, Pencil, MoreVertical } from 'lucide-react';
 import { IconInstagram, IconTikTok, IconYouTube, IconX, IconLinkedIn, IconGlobe } from '@/components/profile/SocialIcons';
 import type { SocialLinks } from '@/components/profile/SocialLinksForm';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 import ReelViewer, { ReviewItem } from '@/components/ReelViewer';
 import { useServices } from '@/hooks/useServices';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -39,7 +39,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
-type TabType = 'reviews' | 'portfolio' | 'client' | 'services';
+type TabType = 'glazes' | 'portfolio' | 'client';
+
+function DonutIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3.5" />
+    </svg>
+  );
+}
 
 interface DbProfile {
   full_name: string;
@@ -98,7 +107,7 @@ const FreelancerProfile = () => {
   const navigate = useNavigate();
   const { user, profile: authProfile } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabType>('reviews');
+  const [activeTab, setActiveTab] = useState<TabType>('glazes');
   const [refreshKey, setRefreshKey] = useState(0);
   const [reelOpen, setReelOpen] = useState(false);
   const [reelStartIndex, setReelStartIndex] = useState(0);
@@ -198,11 +207,10 @@ const FreelancerProfile = () => {
     setDeletingReview(null);
   };
 
-  const tabs: { key: TabType; icon: typeof Film; label: string }[] = [
-    { key: 'reviews', icon: Film, label: 'Reviews' },
+  const tabs: { key: TabType; icon: React.FC<{ className?: string }>; label: string }[] = [
+    { key: 'glazes', icon: DonutIcon, label: 'Glazes' },
     { key: 'portfolio', icon: Grid3X3, label: 'Portfolio' },
-    { key: 'client', icon: Users, label: 'By Clients' },
-    { key: 'services', icon: Briefcase, label: 'Services' },
+    { key: 'client', icon: Users, label: 'Client Receipts' },
   ];
 
   return (
@@ -212,9 +220,8 @@ const FreelancerProfile = () => {
           <button onClick={() => navigate(-1)} className="p-1 text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <Link to="/" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
-            <img src={donutLogo} alt="Glaze" className="h-7 w-7" />
-            <span className="text-sm font-medium text-muted-foreground">Home</span>
+          <Link to="/" className="hover:opacity-80 transition-opacity cursor-pointer">
+            <img src={donutLogo} alt="Glaze" className="h-10 w-10" />
           </Link>
           <span className="font-heading text-lg font-bold text-foreground flex-1">@{username}</span>
           {isOwner && (
@@ -276,18 +283,21 @@ const FreelancerProfile = () => {
               })}
             </div>
           )}
+          {!servicesLoading && dbServices.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {dbServices.map(s => (
+                <Badge key={s.id} variant="secondary" className="text-xs px-2.5 py-0.5">{s.service_name}</Badge>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-6 mt-4 py-3 border-t border-b border-border">
             <div className="text-center">
-              <p className="text-base font-bold text-foreground">{dbPortfolio.length}</p>
-              <p className="text-xs text-muted-foreground">Portfolio</p>
-            </div>
-            <div className="text-center">
               <p className="text-base font-bold text-foreground">{dbReviews.length}</p>
-              <p className="text-xs text-muted-foreground">Reviews</p>
+              <p className="text-xs text-muted-foreground">Glazes</p>
             </div>
             <div className="text-center">
-              <p className="text-base font-bold text-foreground">{dbServices.length}</p>
-              <p className="text-xs text-muted-foreground">Services</p>
+              <p className="text-base font-bold text-foreground">{avgRating > 0 ? avgRating : '—'}</p>
+              <p className="text-xs text-muted-foreground">Avg Score</p>
             </div>
             {canReview && id && (
               <div className="ml-auto">
@@ -308,8 +318,8 @@ const FreelancerProfile = () => {
         </div>
 
         <div className="py-4">
-          {/* Reviews Tab */}
-          {activeTab === 'reviews' && (
+          {/* Glazes Tab */}
+          {activeTab === 'glazes' && (
             <div>
               {dbReviews.length === 0 && (
                 <p className="text-sm text-muted-foreground py-8 text-center">No reviews yet.</p>
@@ -461,24 +471,7 @@ const FreelancerProfile = () => {
             </div>
           )}
 
-          {/* Services Tab */}
-          {activeTab === 'services' && (
-            <div>
-              {servicesLoading ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">Loading services...</p>
-              ) : dbServices.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">No services listed yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2 py-2">
-                  {dbServices.map(s => (
-                    <Badge key={s.id} variant="secondary" className="text-sm px-3 py-1">{s.service_name}</Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Client Posts Tab */}
+          {/* Client Receipts Tab */}
           {activeTab === 'client' && (
             <div className="space-y-4">
               {dbReviews.length === 0 && (

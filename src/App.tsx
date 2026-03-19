@@ -14,6 +14,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
 import { RoleRoute } from "./components/RoleRoute";
+import { FloatingChat } from "./components/FloatingChat";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/profile/:id" element={<FreelancerProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingChat />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
