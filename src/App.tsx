@@ -15,6 +15,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
 import { RoleRoute } from "./components/RoleRoute";
 import { useAuth } from "./hooks/useAuth";
+import { FloatingChat } from "./components/FloatingChat";
 
 /**
  * Redirects a logged-in user with no profile to /onboard on any page load.
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/profile/:id" element={<FreelancerProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <FloatingChat />
           </IncompleteProfileGuard>
         </AuthProvider>
       </BrowserRouter>

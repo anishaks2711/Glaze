@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function UserMenu() {
   const { user, profile, signOut } = useAuth();
@@ -41,6 +41,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2 px-2">
           <Avatar className="h-8 w-8">
+            <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.full_name} className="object-cover" />
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium hidden sm:block">{profile.full_name}</span>
@@ -49,6 +50,11 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <div className="px-2 py-1.5 text-xs text-muted-foreground capitalize">{profile.role}</div>
         <DropdownMenuSeparator />
+        {profile.role === 'freelancer' && (
+          <DropdownMenuItem onClick={() => navigate(`/profile/${user.id}`)} className="cursor-pointer">
+            Profile
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
           Sign out
         </DropdownMenuItem>

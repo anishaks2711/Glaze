@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 interface Message {
   id: string;
@@ -23,26 +24,65 @@ interface ChatSidebarProps {
 export function ChatSidebar({
   open,
   onOpenChange,
+  freelancerId,
   freelancerName,
   freelancerAvatar,
 }: ChatSidebarProps) {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = () => {
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    setLoading(true);
+    setMessages([]);
+
+    supabase
+      .from('messages')
+      .select('id, sender_id, text, created_at')
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${freelancerId}),and(sender_id.eq.${freelancerId},receiver_id.eq.${user.id})`)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        setLoading(false);
+        setMessages((data ?? []).map(m => ({
+          id: m.id,
+          text: m.text,
+          senderId: m.sender_id,
+          timestamp: new Date(m.created_at),
+        })));
+      });
+
+    const channelId = `chat_${[user.id, freelancerId].sort().join('_')}`;
+    const channel = supabase
+      .channel(channelId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const m = payload.new as { id: string; sender_id: string; receiver_id: string; text: string; created_at: string };
+        const isRelevant =
+          (m.sender_id === user.id && m.receiver_id === freelancerId) ||
+          (m.sender_id === freelancerId && m.receiver_id === user.id);
+        if (!isRelevant) return;
+        setMessages(prev =>
+          prev.some(p => p.id === m.id)
+            ? prev
+            : [...prev, { id: m.id, text: m.text, senderId: m.sender_id, timestamp: new Date(m.created_at) }]
+        );
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [open, user?.id, freelancerId]);
+
+  const sendMessage = async () => {
     const text = input.trim();
     if (!text || !user) return;
-    setMessages(prev => [
-      ...prev,
-      { id: crypto.randomUUID(), text, senderId: user.id, timestamp: new Date() },
-    ]);
     setInput('');
+    await supabase.from('messages').insert({ sender_id: user.id, receiver_id: freelancerId, text });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -57,11 +97,7 @@ export function ChatSidebar({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:w-[380px] p-0 flex flex-col"
-      >
-        {/* Header */}
+      <SheetContent side="right" className="w-full sm:w-[380px] p-0 flex flex-col">
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <img
@@ -78,50 +114,38 @@ export function ChatSidebar({
           </div>
         </SheetHeader>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-          {messages.length === 0 && (
+          {loading ? (
+            <p className="text-xs text-muted-foreground text-center py-8">Loading...</p>
+          ) : messages.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">
               Say hello to {freelancerName}!
             </p>
-          )}
-          {messages.map(msg => {
-            const isMine = msg.senderId === user?.id;
-            return (
-              <div
-                key={msg.id}
-                className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                {!isMine && (
-                  <img
-                    src={avatarSrc}
-                    alt={freelancerName}
-                    className="h-6 w-6 rounded-full object-cover shrink-0"
-                  />
-                )}
-                {isMine && profile?.avatar_url && (
-                  <img
-                    src={profile.avatar_url}
-                    alt="You"
-                    className="h-6 w-6 rounded-full object-cover shrink-0"
-                  />
-                )}
-                <div
-                  className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm leading-snug ${
+          ) : (
+            messages.map(msg => {
+              const isMine = msg.senderId === user?.id;
+              return (
+                <div key={msg.id} className={`flex items-end gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {!isMine && (
+                    <img src={avatarSrc} alt={freelancerName} className="h-6 w-6 rounded-full object-cover shrink-0" />
+                  )}
+                  {isMine && profile?.avatar_url && (
+                    <img src={profile.avatar_url} alt="You" className="h-6 w-6 rounded-full object-cover shrink-0" />
+                  )}
+                  <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm leading-snug ${
                     isMine
                       ? 'bg-primary text-primary-foreground rounded-br-sm'
                       : 'bg-secondary text-foreground rounded-bl-sm'
-                  }`}
-                >
-                  {msg.text}
+                  }`}>
+                    {msg.text}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div className="px-4 py-3 border-t border-border shrink-0 flex items-center gap-2">
           <Input
             placeholder={`Message ${freelancerName}...`}

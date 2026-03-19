@@ -53,6 +53,11 @@ export default function EditProfile() {
       toast({ title: 'Invalid tagline', description: taglineV.error, variant: 'destructive' });
       return;
     }
+    const hasLink = Object.values(socialLinks).some(v => v && v.trim());
+    if (!hasLink) {
+      toast({ title: 'Social link required', description: 'Please add at least one social link for verification.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     let avatar_url: string | undefined;
     if (avatarFile && user?.id) {

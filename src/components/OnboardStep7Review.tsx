@@ -1,6 +1,6 @@
 import type { SocialLinks } from '@/components/profile/SocialLinksForm';
 import { Button } from '@/components/ui/button';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 
 interface PortfolioPhoto { preview: string; caption: string | null; }
 

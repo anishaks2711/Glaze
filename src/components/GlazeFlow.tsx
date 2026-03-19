@@ -62,35 +62,40 @@ export function GlazeFlow({
     const longTimer = setTimeout(() => setUploadingLong(true), 60000);
 
     let err: string | null;
-    if (isEditMode && existingReview) {
-      err = await updateReview(existingReview.id, freelancerId, {
-        rating,
-        caption,
-        textContent: text,
-        newVideoFile: videoFile,
-        newPhotoFile: photos[0] ?? null,
-        keepExistingVideo: !videoFile && !!existingReview.mediaUrl,
-        keepExistingPhoto: photos.length === 0 && !!existingReview.photoUrl,
-        currentMediaUrl: existingReview.mediaUrl ?? null,
-        currentPhotoUrl: existingReview.photoUrl ?? null,
-        onProgress: setUploadStatus,
-      });
-    } else {
-      if (!videoFile) {
-        clearTimeout(longTimer);
-        setSubmitting(false);
-        toast({ title: 'Error', description: 'A video Glaze is required.', variant: 'destructive' });
-        return;
+    try {
+      if (isEditMode && existingReview) {
+        err = await updateReview(existingReview.id, freelancerId, {
+          rating,
+          caption,
+          textContent: text,
+          newVideoFile: videoFile,
+          newPhotoFile: photos[0] ?? null,
+          keepExistingVideo: !videoFile && !!existingReview.mediaUrl,
+          keepExistingPhoto: photos.length === 0 && !!existingReview.photoUrl,
+          currentMediaUrl: existingReview.mediaUrl ?? null,
+          currentPhotoUrl: existingReview.photoUrl ?? null,
+          onProgress: setUploadStatus,
+        });
+      } else {
+        if (!videoFile) {
+          clearTimeout(longTimer);
+          setSubmitting(false);
+          toast({ title: 'Error', description: 'A video Glaze is required.', variant: 'destructive' });
+          return;
+        }
+        err = await submitReview({
+          clientId: user.id,
+          rating,
+          caption,
+          textContent: text,
+          videoFile,
+          photoFile: photos[0] ?? null,
+          onProgress: setUploadStatus,
+        });
       }
-      err = await submitReview({
-        clientId: user.id,
-        rating,
-        caption,
-        textContent: text,
-        videoFile,
-        photoFile: photos[0] ?? null,
-        onProgress: setUploadStatus,
-      });
+    } catch (e: unknown) {
+      console.error('[GlazeFlow] submit threw unexpectedly:', e);
+      err = 'Something went wrong. Please try again.';
     }
 
     clearTimeout(longTimer);

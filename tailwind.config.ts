@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         heading: ['Cooper BT', 'Cooper', 'Georgia', 'serif'],
         body: ['DM Sans', 'system-ui', 'sans-serif'],
+        fredoka: ['Fredoka', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 
 interface Props {
   previewUrl: string | null;

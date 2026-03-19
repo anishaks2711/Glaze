@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -28,8 +28,8 @@ export default function Login() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <Link to="/" className="flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-        <img src={donutLogo} alt="Glaze" className="h-8 w-8" />
-        <span className="font-heading text-xl font-bold">Glaze</span>
+        <img src={donutLogo} alt="Glaze" className="h-12 w-12" />
+        <span className="font-fredoka text-xl font-bold">Glaze</span>
       </Link>
       <Card className="w-full max-w-md">
         <CardHeader>

@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import donutLogo from '@/assets/donut-logo.png';
+import { ChevronDown } from 'lucide-react';
+import donutLogo from '@/assets/Donut.svg';
+import donutBg1 from '@/assets/DonutBg1.png';
 import FreelancerCard, { FreelancerCardData } from '@/components/FreelancerCard';
 import ServiceFilter from '@/components/ServiceFilter';
 import { UserMenu } from '@/components/UserMenu';
@@ -8,14 +10,12 @@ import { useFreelancers } from '@/hooks/useFreelancers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 
-// "Photography" chip should match DB values like "Photographer", "Photography", etc.
 function categoryMatches(dbCategory: string | null, chip: string): boolean {
   if (!dbCategory) return false;
   const db = dbCategory.toLowerCase();
   const c = chip.toLowerCase();
   if (db === c) return true;
   if (db.includes(c) || c.includes(db)) return true;
-  // Stem match: "photography" → "photograph" matches "photographer"
   const stem = c.length > 4 ? c.slice(0, -1) : c;
   return db.startsWith(stem);
 }
@@ -26,6 +26,7 @@ const Index = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const { user } = useAuth();
+  const browseRef = useRef<HTMLDivElement>(null);
 
   // Load all distinct categories from the DB once on mount (unaffected by search)
   useEffect(() => {
@@ -76,16 +77,11 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src={donutLogo} alt="Glaze" className="h-10 w-10" />
-          <h1 className="font-heading text-2xl font-bold text-foreground tracking-tight">
-            Glaze
-          </h1>
+          <img src={donutLogo} alt="Glaze" className="h-8 w-8" />
+          <h1 className="font-fredoka text-2xl font-bold text-foreground tracking-tight">Glaze</h1>
           <div className="ml-auto flex items-center gap-2">
             {!user && (
-              <Link
-                to="/login"
-                className="text-sm font-medium text-primary hover:underline px-2"
-              >
+              <Link to="/login" className="text-sm font-medium text-primary hover:underline px-2">
                 Sign In
               </Link>
             )}
@@ -94,8 +90,84 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container max-w-5xl mx-auto px-4 py-6 space-y-8">
-        {/* Search & Filter */}
+      {/* Hero — only shown when signed out */}
+      {!user && (
+        <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-57px)] px-4 text-center overflow-hidden">
+
+          {/* Background atmosphere */}
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/12 blur-[160px]" />
+            <div className="absolute -right-20 -top-20 h-[400px] w-[400px] rounded-full bg-accent/8 blur-[120px]" />
+            <div className="absolute -left-20 bottom-0 h-[350px] w-[350px] rounded-full bg-primary/8 blur-[100px]" />
+            {/* Dot grid */}
+            <div
+              className="absolute inset-0 opacity-[0.035]"
+              style={{ backgroundImage: 'radial-gradient(circle, hsl(20 15% 15%) 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+            />
+          </div>
+
+          {/* DonutBg1 background */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <img src={donutBg1} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
+          </div>
+
+          {/* Main content */}
+          <div className="relative z-10 flex flex-col items-center">
+            {/* Brand name */}
+            <h2 className="font-fredoka text-7xl sm:text-8xl font-bold tracking-tight mb-3 px-4 py-1"
+              style={{ background: 'linear-gradient(135deg, hsl(20,15%,15%) 40%, hsl(22,97%,44%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >
+              Glaze
+            </h2>
+
+            {/* Tagline */}
+            <p
+              className="text-lg sm:text-xl font-semibold mb-8"
+              style={{ background: 'linear-gradient(135deg, hsl(22,97%,44%), hsl(340,75%,65%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            >
+              Vouched, Verified, Visible.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs mb-8">
+              <Link
+                to="/signup?role=freelancer"
+                className="flex-1 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white text-center hover:opacity-90 active:scale-95 transition-all shadow-lg"
+                style={{ background: 'linear-gradient(135deg, hsl(22,97%,44%), hsl(340,75%,65%))' }}
+              >
+                Join as Freelancer
+              </Link>
+              <Link
+                to="/signup?role=client"
+                className="flex-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm px-6 py-3.5 text-sm font-semibold text-foreground text-center hover:bg-secondary active:scale-95 transition-all"
+              >
+                Explore as Client
+              </Link>
+            </div>
+
+            {/* Trust signals */}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>✓ Verified reviews</span>
+              <span className="w-px h-3 bg-border inline-block" />
+              <span>✓ Real clients only</span>
+              <span className="w-px h-3 bg-border inline-block" />
+              <span>✓ Free to browse</span>
+            </div>
+          </div>
+
+          {/* Scroll indicator */}
+          <button
+            onClick={() => browseRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            className="absolute bottom-8 flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span className="text-xs tracking-widest uppercase opacity-60">Browse</span>
+            <ChevronDown className="h-5 w-5 animate-bounce" />
+          </button>
+        </section>
+      )}
+
+      {/* Browse section */}
+      <div ref={browseRef} className="container max-w-5xl mx-auto px-4 py-6 space-y-8">
         <ServiceFilter
           selectedService={selectedService}
           onServiceChange={setSelectedService}
@@ -104,7 +176,6 @@ const Index = () => {
           services={filterChips}
         />
 
-        {/* Results */}
         <section>
           {(selectedService !== 'All' || debouncedSearch) && (
             <div className="flex items-center justify-between mb-4">
@@ -136,25 +207,19 @@ const Index = () => {
           ) : cards.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-lg text-muted-foreground">No freelancers found</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Try a different search or filter
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Try a different search or filter</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {cards.map((f, i) => (
-                <div
-                  key={f.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
+                <div key={f.id} className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
                   <FreelancerCard freelancer={f} index={i} />
                 </div>
               ))}
             </div>
           )}
         </section>
-      </main>
+      </div>
     </div>
   );
 };

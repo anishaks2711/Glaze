@@ -65,31 +65,33 @@ export function ReviewUpload({
 
   return (
     <>
-      {!isControlled && (
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => setChatOpen(true)}
-          >
-            Message
-          </Button>
-          {myReview ? (
-            <>
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                You've Glazed {freelancerName}
-              </span>
+      <div className="flex items-center gap-2">
+        {!isControlled && (
+          <>
+            {myReview ? (
+              <>
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  You've Glazed {freelancerName}
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setInternalOpen(true)}>
+                  Edit your Glaze
+                </Button>
+              </>
+            ) : (
               <Button variant="outline" size="sm" onClick={() => setInternalOpen(true)}>
-                Edit your Glaze
+                Leave a Glaze
               </Button>
-            </>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setInternalOpen(true)}>
-              Leave a Glaze
-            </Button>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        )}
+        <Button
+          size="sm"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          onClick={() => setChatOpen(true)}
+        >
+          Message
+        </Button>
+      </div>
 
       {flowOpen && (
         <GlazeFlow

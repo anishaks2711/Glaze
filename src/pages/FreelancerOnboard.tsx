@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import donutLogo from '@/assets/donut-logo.png';
+import donutLogo from '@/assets/Donut.svg';
 import ProfileBasicsForm from '@/components/profile/ProfileBasicsForm';
 import AvatarUpload from '@/components/profile/AvatarUpload';
 import AboutForm from '@/components/profile/AboutForm';
@@ -28,7 +28,7 @@ const TITLES: Record<Step, string> = {
 const DESCS: Record<Step, string> = {
   1: 'Tell clients who you are. All fields required.',
   2: 'Add a profile photo so clients can recognise you.',
-  3: 'A tagline, location, and social links help clients find you.',
+  3: 'A tagline and location help clients find you. At least one social link is required.',
   4: 'Add at least one service clients can book you for.',
   5: 'Show clients your best work.',
   6: 'What would you like clients to mention in their Glazes?',
