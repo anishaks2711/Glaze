@@ -25,7 +25,7 @@ export default function Signup() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!role) { setError('Please select a role.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError(null);
     setLoading(true);
     const { error } = await signUp(email, password, role, fullName);
@@ -73,10 +73,10 @@ export default function Signup() {
               <Input
                 id="password"
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                minLength={6}
+                minLength={8}
                 required
               />
             </div>

@@ -6,12 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
-interface Props {
-  freelancerId: string | undefined;
+interface Service {
+  id: string;
+  service_name: string;
 }
 
-export default function ServiceForm({ freelancerId }: Props) {
-  const { services, loading, addService, removeService } = useServices(freelancerId);
+interface Props {
+  /** DB mode: pass freelancerId to read/write services from the database. */
+  freelancerId?: string;
+  /** Local mode: manage services in parent state without any DB writes. */
+  localServices?: Service[];
+  onLocalAdd?: (name: string) => void;
+  onLocalRemove?: (id: string) => void;
+}
+
+export default function ServiceForm({ freelancerId, localServices, onLocalAdd, onLocalRemove }: Props) {
+  const localMode = localServices !== undefined;
+  const { services: dbServices, loading: dbLoading, addService: dbAdd, removeService: dbRemove } = useServices(
+    localMode ? undefined : freelancerId
+  );
+
+  const services = localMode ? localServices : dbServices;
+  const loading = localMode ? false : dbLoading;
+
   const [input, setInput] = useState('');
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +42,22 @@ export default function ServiceForm({ freelancerId }: Props) {
     if (!validationResult.valid) { setError(validationResult.error ?? 'Invalid service name'); return; }
     if (isDuplicate) { setError('That service is already added.'); return; }
     if (services.length >= 10) { setError('Maximum 10 services allowed.'); return; }
-    setAdding(true);
     setError(null);
-    const err = await addService(input.trim());
+    if (localMode) {
+      onLocalAdd?.(input.trim());
+      setInput('');
+      return;
+    }
+    setAdding(true);
+    const err = await dbAdd(input.trim());
     setAdding(false);
     if (err) { setError(err); return; }
     setInput('');
+  }
+
+  function handleRemove(id: string) {
+    if (localMode) { onLocalRemove?.(id); return; }
+    dbRemove(id);
   }
 
   return (
@@ -62,7 +89,7 @@ export default function ServiceForm({ freelancerId }: Props) {
             <Badge key={s.id} variant="secondary" className="flex items-center gap-1 pr-1">
               {s.service_name}
               <button
-                onClick={() => removeService(s.id)}
+                onClick={() => handleRemove(s.id)}
                 className="ml-1 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
               >
                 <X className="h-3 w-3" />

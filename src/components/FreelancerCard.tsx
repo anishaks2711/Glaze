@@ -1,5 +1,6 @@
-import { Star, TrendingUp } from 'lucide-react';
+import { Star, TrendingUp, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { IconInstagram, IconLinkedIn } from '@/components/profile/SocialIcons';
 
 export interface FreelancerCardData {
   id: string;
@@ -11,6 +12,9 @@ export interface FreelancerCardData {
   reviewCount: number;
   location: string;
   trending?: boolean;
+  verifiedInstagram?: boolean;
+  verifiedLinkedin?: boolean;
+  verifiedIdentity?: boolean;
 }
 
 interface FreelancerCardProps {
@@ -20,6 +24,7 @@ interface FreelancerCardProps {
 
 const FreelancerCard = ({ freelancer, index }: FreelancerCardProps) => {
   const navigate = useNavigate();
+  const hasVerification = freelancer.verifiedInstagram || freelancer.verifiedLinkedin || freelancer.verifiedIdentity;
 
   return (
     <div
@@ -46,6 +51,26 @@ const FreelancerCard = ({ freelancer, index }: FreelancerCardProps) => {
           {freelancer.name}
         </h3>
         <p className="text-xs text-muted-foreground mb-2">@{freelancer.username}</p>
+
+        {hasVerification && (
+          <div className="flex items-center justify-center gap-1 mb-2 flex-wrap">
+            {freelancer.verifiedInstagram && (
+              <span className="flex items-center gap-0.5 rounded-full bg-blue-100 dark:bg-blue-950/30 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600">
+                <IconInstagram className="h-2.5 w-2.5" /> ✓
+              </span>
+            )}
+            {freelancer.verifiedLinkedin && (
+              <span className="flex items-center gap-0.5 rounded-full bg-blue-100 dark:bg-blue-950/30 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600">
+                <IconLinkedIn className="h-2.5 w-2.5" /> ✓
+              </span>
+            )}
+            {freelancer.verifiedIdentity && (
+              <span className="flex items-center gap-0.5 rounded-full bg-green-100 dark:bg-green-950/30 px-1.5 py-0.5 text-[9px] font-semibold text-green-600">
+                <Shield className="h-2.5 w-2.5" /> ✓
+              </span>
+            )}
+          </div>
+        )}
 
         <span className="inline-block rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground mb-2">
           {freelancer.service}

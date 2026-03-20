@@ -16,6 +16,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, role: 'freelancer' | 'client', fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 function mapAuthError(message: string): string {
@@ -28,6 +29,13 @@ function mapAuthError(message: string): string {
   if (message.includes('network') || message.includes('fetch') || message.includes('Failed to fetch')) {
     return 'Connection error. Please try again.';
   }
+  if (message.includes('Password should be at least') || message.includes('password') && message.includes('characters')) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (message.includes('signup_disabled') || message.includes('Signups not allowed')) {
+    return 'Sign-ups are temporarily disabled. Please try again later.';
+  }
+  console.error('[mapAuthError] unhandled Supabase error:', message);
   return 'An error occurred. Please try again.';
 }
 
@@ -74,9 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: { data: { role, full_name: fullName } },
     });
+    // Do NOT fetchProfile here — no profile row exists until onboarding completes.
+    if (error) console.error('[signUp] raw error:', error.message);
     if (!error && data.user) {
       setUser(data.user);
-      fetchProfile(data.user.id);
     }
     return { error: error ? mapAuthError(error.message) : null };
   }
@@ -85,8 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }
 
+  async function refreshProfile() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) await fetchProfile(session.user.id);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

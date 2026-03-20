@@ -12,6 +12,8 @@ export interface ReviewItem {
   mediaUrl?: string | null;
   mediaType?: string | null;
   photoUrl?: string | null;
+  photoUrls?: string[];
+  thumbnailUrl?: string | null;
   hasVideo?: boolean;
   createdAt?: string;
 }
@@ -24,12 +26,25 @@ interface ReelViewerProps {
 
 const ReelViewer = ({ reviews, startIndex, onClose }: ReelViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const [currentIndex, setCurrentIndex] = useState(startIndex);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  useEffect(() => {
+    videoRefs.current.forEach((video, i) => {
+      if (!video) return;
+      if (i === currentIndex) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+  }, [currentIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -65,7 +80,7 @@ const ReelViewer = ({ reviews, startIndex, onClose }: ReelViewerProps) => {
         onScroll={handleScroll}
         className="h-full w-full overflow-y-scroll snap-y-mandatory scrollbar-hide"
       >
-        {reviews.map((review) => {
+        {reviews.map((review, idx) => {
           const hasMedia = !!(review.mediaUrl || review.photoUrl);
           const textClr = hasMedia ? 'text-background' : 'text-foreground';
           const textClrMuted = hasMedia ? 'text-background/90' : 'text-muted-foreground';
@@ -77,9 +92,10 @@ const ReelViewer = ({ reviews, startIndex, onClose }: ReelViewerProps) => {
               {/* Media Background */}
               {review.mediaUrl && review.mediaType === 'video' ? (
                 <video
+                  ref={(el) => { videoRefs.current[idx] = el; }}
                   src={review.mediaUrl}
                   className="absolute inset-0 h-full w-full object-cover"
-                  autoPlay loop playsInline
+                  loop playsInline
                 />
               ) : review.mediaUrl && review.mediaType === 'image' ? (
                 <img

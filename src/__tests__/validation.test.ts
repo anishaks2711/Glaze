@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile } from '@/lib/validation';
+import { validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt } from '@/lib/validation';
 
 describe('validateServiceName', () => {
   it('rejects empty string', () => {
@@ -128,5 +128,61 @@ describe('validatePortfolioFile', () => {
     const data = new Uint8Array(10 * 1024 * 1024);
     const file = new File([data], 'ok.jpg', { type: 'image/jpeg' });
     expect(validatePortfolioFile(file).valid).toBe(true);
+  });
+});
+
+describe('validateCategory', () => {
+  it('rejects empty string', () => {
+    expect(validateCategory('').valid).toBe(false);
+  });
+
+  it('rejects whitespace-only string', () => {
+    expect(validateCategory('   ').valid).toBe(false);
+  });
+
+  it('rejects single character', () => {
+    expect(validateCategory('A').valid).toBe(false);
+  });
+
+  it('rejects over 50 characters', () => {
+    expect(validateCategory('a'.repeat(51)).valid).toBe(false);
+  });
+
+  it('rejects special-characters-only input', () => {
+    expect(validateCategory('!!!').valid).toBe(false);
+  });
+
+  it('accepts predefined category', () => {
+    expect(validateCategory('Baker').valid).toBe(true);
+  });
+
+  it('accepts custom Other category', () => {
+    expect(validateCategory('Tattoo Artist').valid).toBe(true);
+  });
+
+  it('accepts exactly 2 characters', () => {
+    expect(validateCategory('DJ').valid).toBe(true);
+  });
+
+  it('accepts exactly 50 characters', () => {
+    expect(validateCategory('DJ' + 'a'.repeat(48)).valid).toBe(true);
+  });
+});
+
+describe('validateReviewPrompt', () => {
+  it('accepts empty string (optional)', () => {
+    expect(validateReviewPrompt('').valid).toBe(true);
+  });
+
+  it('accepts valid prompt', () => {
+    expect(validateReviewPrompt('Please mention the event type.').valid).toBe(true);
+  });
+
+  it('rejects prompt over 500 characters', () => {
+    expect(validateReviewPrompt('a'.repeat(501)).valid).toBe(false);
+  });
+
+  it('accepts exactly 500 characters', () => {
+    expect(validateReviewPrompt('a'.repeat(500)).valid).toBe(true);
   });
 });
