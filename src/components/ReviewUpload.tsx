@@ -17,6 +17,8 @@ interface ReviewUploadProps {
   existingReview?: ReviewItem;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
+  // Called when "Edit your Glaze" is clicked — parent handles opening edit flow
+  onEditMyReview?: () => void;
 }
 
 export function ReviewUpload({
@@ -29,6 +31,7 @@ export function ReviewUpload({
   existingReview,
   open: controlledOpen,
   onOpenChange,
+  onEditMyReview,
 }: ReviewUploadProps) {
   const { user } = useAuth();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -61,7 +64,7 @@ export function ReviewUpload({
       }
     : undefined;
 
-  const activeExistingReview = existingReview ?? (isControlled && myReview ? myReviewItem : undefined);
+  const activeExistingReview = existingReview ?? myReviewItem;
 
   return (
     <>
@@ -73,7 +76,7 @@ export function ReviewUpload({
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   You've Glazed {freelancerName}
                 </span>
-                <Button variant="outline" size="sm" onClick={() => setInternalOpen(true)}>
+                <Button variant="outline" size="sm" onClick={() => onEditMyReview ? onEditMyReview() : setInternalOpen(true)}>
                   Edit your Glaze
                 </Button>
               </>

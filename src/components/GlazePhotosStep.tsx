@@ -7,7 +7,8 @@ interface GlazePhotosStepProps {
   submitting: boolean;
   uploadingLong: boolean;
   statusLabel?: string;
-  onSubmit: (photos: File[]) => void;
+  existingPhotoUrls?: string[];
+  onSubmit: (photos: File[], removedExisting: boolean) => void;
 }
 
 export function GlazePhotosStep({
@@ -15,11 +16,13 @@ export function GlazePhotosStep({
   submitting,
   uploadingLong,
   statusLabel,
+  existingPhotoUrls = [],
   onSubmit,
 }: GlazePhotosStepProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [existingRemoved, setExistingRemoved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +49,7 @@ export function GlazePhotosStep({
 
   const loadingLabel = statusLabel ?? (uploadingLong ? 'Still uploading...' : 'Uploading...');
   const submitLabel = isEditMode ? 'Update Glaze' : 'Submit Glaze';
+  const showExisting = existingPhotoUrls.length > 0 && !existingRemoved;
 
   return (
     <div className="space-y-5">
@@ -53,6 +57,35 @@ export function GlazePhotosStep({
         <h2 className="text-lg font-semibold text-foreground">Add photos from the event</h2>
         <p className="text-sm text-muted-foreground mt-1">Optional — up to 5 photos, 10MB each</p>
       </div>
+
+      {/* Existing photos (edit mode) */}
+      {showExisting && (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs text-muted-foreground">
+              Current {existingPhotoUrls.length === 1 ? 'photo' : `photos (${existingPhotoUrls.length})`}
+            </p>
+            <button
+              onClick={() => setExistingRemoved(true)}
+              className="text-xs text-destructive hover:underline"
+            >
+              Remove all
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {existingPhotoUrls.map((url, idx) => (
+              <div key={idx} className="relative w-20 h-20">
+                <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover rounded-md" />
+              </div>
+            ))}
+          </div>
+          {photos.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              New photos will replace existing ones when you submit.
+            </p>
+          )}
+        </div>
+      )}
 
       {previews.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -82,7 +115,7 @@ export function GlazePhotosStep({
       <div className="flex gap-3 pt-2">
         <Button
           variant="outline"
-          onClick={() => onSubmit([])}
+          onClick={() => onSubmit([], existingRemoved)}
           disabled={submitting}
           className="flex-1"
         >
@@ -91,7 +124,7 @@ export function GlazePhotosStep({
           ) : 'Skip'}
         </Button>
         <Button
-          onClick={() => onSubmit(photos)}
+          onClick={() => onSubmit(photos, existingRemoved)}
           disabled={submitting}
           className="flex-1"
         >

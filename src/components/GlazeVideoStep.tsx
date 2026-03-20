@@ -133,7 +133,7 @@ export function GlazeVideoStep({ onVideoSelected, onClose }: GlazeVideoStepProps
       )}
 
       {previewUrl ? (
-        <video src={previewUrl} autoPlay loop playsInline className="flex-1 w-full object-cover" />
+        <video key={previewUrl} src={previewUrl} controls autoPlay playsInline className="flex-1 w-full object-cover" />
       ) : (
         <video ref={videoRef} autoPlay muted playsInline className="flex-1 w-full object-cover bg-neutral-900" />
       )}

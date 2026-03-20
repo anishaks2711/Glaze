@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { generateVideoThumbnail } from '@/lib/videoUtils';
 import {
   validateReviewRating,
   validateReviewText,
@@ -19,11 +20,11 @@ export interface UpdateReviewParams {
   caption: string;
   textContent: string;
   newVideoFile: File | null;
-  newPhotoFile: File | null;
+  newPhotoFiles: File[];
   keepExistingVideo: boolean;
-  keepExistingPhoto: boolean;
+  keepExistingPhotos: boolean;
   currentMediaUrl: string | null;
-  currentPhotoUrl: string | null;
+  currentPhotoUrls: string[];
   onProgress?: (msg: string) => void;
 }
 
@@ -46,13 +47,14 @@ export async function updateReview(
     const v = validateReviewVideo(params.newVideoFile);
     if (!v.valid) return v.error!;
   }
-  if (params.newPhotoFile) {
-    const p = validateReviewPhoto(params.newPhotoFile);
+  for (const f of params.newPhotoFiles) {
+    const p = validateReviewPhoto(f);
     if (!p.valid) return p.error!;
   }
 
   let finalMediaUrl: string | null = null;
   let hasVideo = false;
+  let newThumbnailUrl: string | null | undefined = undefined; // undefined = don't overwrite existing
 
   if (params.newVideoFile) {
     const ext = params.newVideoFile.name.split('.').pop() ?? 'webm';
@@ -73,6 +75,18 @@ export async function updateReview(
     if (uploadErr) return 'Upload failed. Please try again.';
     finalMediaUrl = supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl;
     hasVideo = true;
+    try {
+      const thumbBlob = await generateVideoThumbnail(params.newVideoFile);
+      const thumbPath = `${freelancerId}/${reviewId}/thumbnail.jpg`;
+      await supabase.storage.from('review-media').upload(thumbPath, thumbBlob, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+      newThumbnailUrl = supabase.storage.from('review-media').getPublicUrl(thumbPath).data.publicUrl;
+    } catch (e) {
+      console.warn('[updateReview] thumbnail generation failed (non-fatal):', e);
+      newThumbnailUrl = null;
+    }
     if (params.currentMediaUrl) {
       const old = getStoragePath(params.currentMediaUrl);
       if (old) await supabase.storage.from('review-media').remove([old]);
@@ -86,45 +100,71 @@ export async function updateReview(
   }
 
   let finalPhotoUrl: string | null = null;
-  if (params.newPhotoFile) {
-    const ext = params.newPhotoFile.name.split('.').pop() ?? 'jpg';
-    const path = `${freelancerId}/${reviewId}-photo.${ext}`;
-    params.onProgress?.('Uploading photo...');
-    let photoErr: { message: string } | null = null;
-    try {
-      const { error } = await supabase.storage
-        .from('review-media')
-        .upload(path, params.newPhotoFile, { contentType: params.newPhotoFile.type, upsert: true });
-      photoErr = error;
-    } catch (e: unknown) {
-      console.error('[updateReview] photo upload threw:', e);
-      return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
-    }
-    if (photoErr) return 'Photo upload failed. Please try again.';
-    finalPhotoUrl = supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl;
-    if (params.currentPhotoUrl) {
-      const old = getStoragePath(params.currentPhotoUrl);
+  if (params.newPhotoFiles.length > 0) {
+    // Delete all existing photos from storage
+    for (const url of params.currentPhotoUrls) {
+      const old = getStoragePath(url);
       if (old) await supabase.storage.from('review-media').remove([old]);
     }
-  } else if (params.keepExistingPhoto) {
-    finalPhotoUrl = params.currentPhotoUrl;
-  } else if (params.currentPhotoUrl) {
-    const old = getStoragePath(params.currentPhotoUrl);
-    if (old) await supabase.storage.from('review-media').remove([old]);
+    // Delete existing review_photos rows
+    await supabase.from('review_photos').delete().eq('review_id', reviewId);
+
+    // Upload each new photo with a unique indexed path (Bug 3: avoid path conflicts)
+    const uploadedUrls: string[] = [];
+    params.onProgress?.('Uploading photos...');
+    for (let idx = 0; idx < params.newPhotoFiles.length; idx++) {
+      const f = params.newPhotoFiles[idx];
+      const ext = f.name.split('.').pop() ?? 'jpg';
+      const path = `${freelancerId}/${reviewId}-photo-${idx}.${ext}`;
+      let photoErr: { message: string } | null = null;
+      try {
+        const { error } = await supabase.storage
+          .from('review-media')
+          .upload(path, f, { contentType: f.type, upsert: true });
+        photoErr = error;
+        if (photoErr) {
+          console.error('[updateReview] photo upload error:', photoErr.message, photoErr);
+          return 'Photo upload failed. Please try again.';
+        }
+      } catch (e: unknown) {
+        console.error('[updateReview] photo upload threw:', e);
+        return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
+      }
+      uploadedUrls.push(supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl);
+    }
+    finalPhotoUrl = uploadedUrls[0] ?? null;
+
+    // Insert into review_photos
+    if (uploadedUrls.length > 0) {
+      const rows = uploadedUrls.map((url, idx) => ({ review_id: reviewId, image_url: url, display_order: idx }));
+      const { error: photoInsertErr } = await supabase.from('review_photos').insert(rows);
+      if (photoInsertErr) console.error('[updateReview] review_photos insert error:', photoInsertErr.message);
+    }
+  } else if (params.keepExistingPhotos) {
+    finalPhotoUrl = params.currentPhotoUrls[0] ?? null;
+  } else {
+    // Remove all existing photos
+    for (const url of params.currentPhotoUrls) {
+      const old = getStoragePath(url);
+      if (old) await supabase.storage.from('review-media').remove([old]);
+    }
+    await supabase.from('review_photos').delete().eq('review_id', reviewId);
   }
 
   params.onProgress?.('Saving your Glaze...');
+  const updatePayload: Record<string, unknown> = {
+    rating: params.rating,
+    caption: params.caption.trim() || null,
+    text_content: params.textContent.trim() || null,
+    media_url: finalMediaUrl,
+    media_type: finalMediaUrl ? 'video' : null,
+    photo_url: finalPhotoUrl,
+    has_video: hasVideo,
+  };
+  if (newThumbnailUrl !== undefined) updatePayload.thumbnail_url = newThumbnailUrl;
   const { error } = await supabase
     .from('reviews')
-    .update({
-      rating: params.rating,
-      caption: params.caption.trim() || null,
-      text_content: params.textContent.trim() || null,
-      media_url: finalMediaUrl,
-      media_type: finalMediaUrl ? 'video' : null,
-      photo_url: finalPhotoUrl,
-      has_video: hasVideo,
-    })
+    .update(updatePayload)
     .eq('id', reviewId);
 
   if (error) {
@@ -138,6 +178,7 @@ export async function deleteReview(
   reviewId: string,
   mediaUrl?: string | null,
   photoUrl?: string | null,
+  thumbnailUrl?: string | null,
 ): Promise<string | null> {
   const { data: deleted, error } = await supabase
     .from('reviews')
@@ -155,6 +196,7 @@ export async function deleteReview(
   const pathsToDelete: string[] = [];
   if (mediaUrl) { const p = getStoragePath(mediaUrl); if (p) pathsToDelete.push(p); }
   if (photoUrl) { const p = getStoragePath(photoUrl); if (p) pathsToDelete.push(p); }
+  if (thumbnailUrl) { const p = getStoragePath(thumbnailUrl); if (p) pathsToDelete.push(p); }
   if (pathsToDelete.length > 0) {
     await supabase.storage.from('review-media').remove(pathsToDelete);
   }
@@ -172,6 +214,7 @@ export interface Review {
   media_type: 'image' | 'video' | null;
   photo_url: string | null;
   has_video: boolean;
+  thumbnail_url: string | null;
   created_at: string;
 }
 
@@ -181,12 +224,12 @@ interface SubmitParams {
   caption?: string;
   textContent?: string;
   videoFile?: File | null;
-  photoFile?: File | null;
+  photoFiles?: File[];
   onProgress?: (msg: string) => void;
 }
 
 const SELECT_FIELDS =
-  'id, freelancer_id, client_id, rating, caption, text_content, media_url, media_type, photo_url, has_video, created_at';
+  'id, freelancer_id, client_id, rating, caption, text_content, media_url, media_type, photo_url, has_video, thumbnail_url, created_at';
 
 export async function getMyReview(
   freelancerId: string,
@@ -232,7 +275,7 @@ export function useReviews(freelancerId: string | undefined) {
     caption = '',
     textContent = '',
     videoFile,
-    photoFile,
+    photoFiles = [],
     onProgress,
   }: SubmitParams): Promise<string | null> {
     if (!freelancerId) return 'Not authenticated';
@@ -255,8 +298,10 @@ export function useReviews(freelancerId: string | undefined) {
     const videoCheck = validateReviewVideo(videoFile ?? null);
     if (!videoCheck.valid) return videoCheck.error!;
 
-    const photoCheck = validateReviewPhoto(photoFile ?? null);
-    if (!photoCheck.valid) return photoCheck.error!;
+    for (const f of photoFiles) {
+      const p = validateReviewPhoto(f);
+      if (!p.valid) return p.error!;
+    }
 
     // Check for duplicate before uploading
     const { data: existing } = await supabase
@@ -267,11 +312,10 @@ export function useReviews(freelancerId: string | undefined) {
       .maybeSingle();
     if (existing) {
       return "You've already Glazed this freelancer. You can edit your existing Glaze.";
-    };
+    }
 
     const reviewId = crypto.randomUUID();
     let mediaUrl: string | null = null;
-    let photoUrl: string | null = null;
 
     if (videoFile) {
       const ext = videoFile.name.split('.').pop() ?? 'webm';
@@ -295,24 +339,50 @@ export function useReviews(freelancerId: string | undefined) {
       mediaUrl = publicUrl;
     }
 
-    if (photoFile) {
-      const ext = photoFile.name.split('.').pop() ?? 'jpg';
-      const path = `${freelancerId}/${reviewId}-photo.${ext}`;
-      onProgress?.('Uploading photo...');
+    // Generate and upload thumbnail for the video
+    let thumbnailUrl: string | null = null;
+    if (videoFile) {
       try {
-        const { error: uploadError } = await supabase.storage
-          .from('review-media')
-          .upload(path, photoFile, { contentType: photoFile.type, upsert: false });
-        if (uploadError) {
-          console.error('[useReviews] photo upload error:', uploadError.message);
-          return 'Photo upload failed. Please try again.';
-        }
-      } catch (e: unknown) {
-        console.error('[useReviews] photo upload threw:', e);
-        return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
+        const thumbBlob = await generateVideoThumbnail(videoFile);
+        const thumbPath = `${freelancerId}/${reviewId}/thumbnail.jpg`;
+        await supabase.storage.from('review-media').upload(thumbPath, thumbBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+        thumbnailUrl = supabase.storage.from('review-media').getPublicUrl(thumbPath).data.publicUrl;
+      } catch (e) {
+        console.warn('[submitReview] thumbnail generation failed (non-fatal):', e);
       }
-      const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(path);
-      photoUrl = publicUrl;
+    }
+
+    // Upload all photos with unique indexed paths (Bug 3: avoid path conflicts)
+    const uploadedPhotoUrls: string[] = [];
+    console.log('[submitReview] 1. Photo files to upload:', photoFiles.length);
+    if (photoFiles.length > 0) {
+      onProgress?.('Uploading photos...');
+      for (let idx = 0; idx < photoFiles.length; idx++) {
+        const f = photoFiles[idx];
+        const ext = f.name.split('.').pop() ?? 'jpg';
+        const path = `${freelancerId}/${reviewId}-photo-${idx}.${ext}`;
+        let uploadError: { message: string } | null = null;
+        try {
+          const { error } = await supabase.storage
+            .from('review-media')
+            .upload(path, f, { contentType: f.type, upsert: false });
+          uploadError = error;
+          console.log('[submitReview] 2. Upload result:', { path, error: uploadError?.message ?? null });
+          if (uploadError) {
+            console.error('[useReviews] photo upload error:', uploadError.message, uploadError);
+            return 'Photo upload failed. Please try again.';
+          }
+        } catch (e: unknown) {
+          console.error('[useReviews] photo upload threw:', e);
+          return e instanceof Error ? e.message : 'Photo upload failed. Please try again.';
+        }
+        const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(path);
+        console.log('[submitReview] 3. Public URL:', publicUrl);
+        uploadedPhotoUrls.push(publicUrl);
+      }
     }
 
     onProgress?.('Saving your Glaze...');
@@ -328,8 +398,9 @@ export function useReviews(freelancerId: string | undefined) {
         text_content: textContent.trim() || null,
         media_url: mediaUrl,
         media_type: mediaUrl ? 'video' : null,
-        photo_url: photoUrl,
+        photo_url: uploadedPhotoUrls[0] ?? null,
         has_video: !!videoFile,
+        thumbnail_url: thumbnailUrl,
       })
       .select(SELECT_FIELDS)
       .single();
@@ -340,6 +411,19 @@ export function useReviews(freelancerId: string | undefined) {
         return "You've already Glazed this freelancer. You can edit your existing Glaze.";
       }
       return 'Failed to submit review. Please try again.';
+    }
+
+    // Insert review_photos rows for all uploaded photos
+    if (uploadedPhotoUrls.length > 0) {
+      const rows = uploadedPhotoUrls.map((url, idx) => ({
+        review_id: reviewId,
+        image_url: url,
+        display_order: idx,
+      }));
+      console.log('[submitReview] 4. Inserting review_photos rows:', rows.length);
+      const { data: photoData, error: photoInsertErr } = await supabase.from('review_photos').insert(rows).select();
+      console.log('[submitReview] 4. Insert result:', { data: photoData, error: photoInsertErr?.message ?? null });
+      if (photoInsertErr) console.error('[submitReview] review_photos insert error:', photoInsertErr.message);
     }
 
     setReviews(prev => [data, ...prev]);

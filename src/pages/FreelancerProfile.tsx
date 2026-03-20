@@ -148,7 +148,7 @@ const FreelancerProfile = () => {
             .single(),
           supabase
             .from('reviews')
-            .select('id, client_id, rating, caption, text_content, media_url, media_type, photo_url, created_at, profiles!reviews_client_id_fkey(full_name, avatar_url)')
+            .select('id, client_id, rating, caption, text_content, media_url, media_type, photo_url, thumbnail_url, created_at, profiles!reviews_client_id_fkey(full_name, avatar_url)')
             .eq('freelancer_id', id)
             .order('has_video', { ascending: false })
             .order('created_at', { ascending: false }),
@@ -166,19 +166,43 @@ const FreelancerProfile = () => {
             verified_identity: profileRes.data.verified_identity ?? false,
           });
         }
-        const reviews: ReviewItem[] = (reviewsRes.data ?? []).map((r: any) => ({
-          id: r.id,
-          clientId: r.client_id,
-          clientName: r.profiles?.full_name ?? 'Anonymous',
-          clientAvatar: r.profiles?.avatar_url ?? '',
-          rating: r.rating,
-          text: r.text_content ?? '',
-          caption: r.caption ?? null,
-          mediaUrl: r.media_url,
-          mediaType: r.media_type,
-          photoUrl: r.photo_url ?? null,
-          createdAt: r.created_at,
-        }));
+        const rawReviews = reviewsRes.data ?? [];
+
+        // Fetch all review_photos for these reviews in one query (graceful: no-op if table missing)
+        let photosMap: Record<string, string[]> = {};
+        const reviewIds = rawReviews.map((r: any) => r.id);
+        if (reviewIds.length > 0) {
+          const { data: photosData } = await supabase
+            .from('review_photos')
+            .select('review_id, image_url, display_order')
+            .in('review_id', reviewIds)
+            .order('display_order', { ascending: true });
+          if (photosData) {
+            for (const p of photosData) {
+              if (!photosMap[p.review_id]) photosMap[p.review_id] = [];
+              photosMap[p.review_id].push(p.image_url);
+            }
+          }
+        }
+
+        const reviews: ReviewItem[] = rawReviews.map((r: any) => {
+          const photoUrls = photosMap[r.id] ?? (r.photo_url ? [r.photo_url] : []);
+          return {
+            id: r.id,
+            clientId: r.client_id,
+            clientName: r.profiles?.full_name ?? 'Anonymous',
+            clientAvatar: r.profiles?.avatar_url ?? '',
+            rating: r.rating,
+            text: r.text_content ?? '',
+            caption: r.caption ?? null,
+            mediaUrl: r.media_url,
+            mediaType: r.media_type,
+            photoUrl: r.photo_url ?? null,
+            photoUrls,
+            thumbnailUrl: r.thumbnail_url ?? null,
+            createdAt: r.created_at,
+          };
+        });
         setDbReviews(reviews);
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -217,13 +241,13 @@ const FreelancerProfile = () => {
     : 0;
 
   const videoReviews = dbReviews.filter(r => r.mediaType === 'video' && r.mediaUrl);
-  const photoReviews = dbReviews.filter(r => r.mediaType !== 'video' && (r.photoUrl || r.mediaUrl));
+  const photoReviews = dbReviews.filter(r => (r.photoUrls && r.photoUrls.length > 0) || r.photoUrl || (r.mediaType !== 'video' && r.mediaUrl));
   const textReviews = dbReviews.filter(r => !r.mediaUrl && !r.photoUrl);
 
   const handleDeleteConfirm = async () => {
     if (!deletingReview) return;
     setDeleteLoading(true);
-    const err = await deleteReview(deletingReview.id, deletingReview.mediaUrl, deletingReview.photoUrl);
+    const err = await deleteReview(deletingReview.id, deletingReview.mediaUrl, deletingReview.photoUrl, deletingReview.thumbnailUrl);
     setDeleteLoading(false);
     if (err) {
       toast({ title: 'Error', description: err, variant: 'destructive' });
@@ -361,6 +385,10 @@ const FreelancerProfile = () => {
                   freelancerAvatar={avatar}
                   reviewPrompt={profile.review_prompt}
                   myReview={myReview}
+                  onEditMyReview={() => {
+                    const item = myReview ? dbReviews.find(r => r.id === myReview.id) : undefined;
+                    if (item) setEditingReview(item);
+                  }}
                   onReviewSubmitted={() => setRefreshKey(k => k + 1)}
                 />
               </div>
@@ -409,13 +437,20 @@ const FreelancerProfile = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
                   {videoReviews.map((review, idx) => (
-                    <div key={review.id} className="relative aspect-[9/16] overflow-hidden rounded-md bg-secondary group">
-                      <video src={review.mediaUrl!} className="absolute inset-0 h-full w-full object-cover" muted playsInline />
-                      <div
-                        className="absolute inset-0 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        onClick={() => { setReelStartIndex(idx); setReelOpen(true); }}
-                      >
-                        <Play className="h-8 w-8 text-background fill-background" />
+                    <div key={review.id} className="relative aspect-[9/16] overflow-hidden rounded-md bg-secondary group cursor-pointer" onClick={() => { setReelStartIndex(idx); setReelOpen(true); }}>
+                      <video
+                        className="absolute inset-0 h-full w-full object-cover"
+                        src={review.mediaUrl!}
+                        poster={review.thumbnailUrl ?? undefined}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1; }}
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/30 flex items-center justify-center mb-2">
+                          <Play className="h-6 w-6 text-white fill-white" />
+                        </div>
                       </div>
                       <div className="absolute top-2 right-2">
                         <ReviewMenu review={review} userId={user?.id} onEdit={setEditingReview} onDelete={setDeletingReview} />
@@ -513,13 +548,31 @@ const FreelancerProfile = () => {
                         </div>
                         {review.caption && <p className="text-sm font-semibold text-foreground mt-1">{review.caption}</p>}
                         {review.text && <p className="text-sm text-muted-foreground mt-1">{review.text}</p>}
-                        {(review.photoUrl ?? review.mediaUrl) && (
+                        {(review.photoUrls && review.photoUrls.length > 0) ? (
+                          <div className="mt-2">
+                            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1">
+                              {review.photoUrls.map((url, idx) => (
+                                <img
+                                  key={idx}
+                                  src={url}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="h-48 w-48 object-cover rounded-lg flex-shrink-0 snap-center"
+                                />
+                              ))}
+                            </div>
+                            {review.photoUrls.length > 1 && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {review.photoUrls.length} photos · scroll to see all
+                              </p>
+                            )}
+                          </div>
+                        ) : (review.photoUrl ?? review.mediaUrl) ? (
                           <img
                             src={review.photoUrl ?? review.mediaUrl ?? ''}
                             alt="Receipt photo"
                             className="mt-2 rounded-md max-h-48 object-cover"
                           />
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>

@@ -56,10 +56,17 @@ export function GlazeFlow({
     setStep('photos');
   };
 
-  const handleSubmit = async (photos: File[]) => {
+  const handleSubmit = async (photos: File[], removedExisting = false) => {
     if (!rating) return;
     setSubmitting(true);
     const longTimer = setTimeout(() => setUploadingLong(true), 60000);
+
+    // Resolve existing photo URLs from the ReviewItem (prefers photoUrls[], falls back to photoUrl)
+    const existingPhotoUrls: string[] = existingReview?.photoUrls?.length
+      ? existingReview.photoUrls
+      : existingReview?.photoUrl
+        ? [existingReview.photoUrl]
+        : [];
 
     let err: string | null;
     try {
@@ -69,11 +76,11 @@ export function GlazeFlow({
           caption,
           textContent: text,
           newVideoFile: videoFile,
-          newPhotoFile: photos[0] ?? null,
+          newPhotoFiles: photos,
           keepExistingVideo: !videoFile && !!existingReview.mediaUrl,
-          keepExistingPhoto: photos.length === 0 && !!existingReview.photoUrl,
+          keepExistingPhotos: !removedExisting && photos.length === 0 && existingPhotoUrls.length > 0,
           currentMediaUrl: existingReview.mediaUrl ?? null,
-          currentPhotoUrl: existingReview.photoUrl ?? null,
+          currentPhotoUrls: existingPhotoUrls,
           onProgress: setUploadStatus,
         });
       } else {
@@ -89,7 +96,7 @@ export function GlazeFlow({
           caption,
           textContent: text,
           videoFile,
-          photoFile: photos[0] ?? null,
+          photoFiles: photos,
           onProgress: setUploadStatus,
         });
       }
@@ -151,6 +158,13 @@ export function GlazeFlow({
               submitting={submitting}
               uploadingLong={uploadingLong}
               statusLabel={uploadStatus ?? undefined}
+              existingPhotoUrls={
+                existingReview?.photoUrls?.length
+                  ? existingReview.photoUrls
+                  : existingReview?.photoUrl
+                    ? [existingReview.photoUrl]
+                    : []
+              }
               onSubmit={handleSubmit}
             />
           )}
