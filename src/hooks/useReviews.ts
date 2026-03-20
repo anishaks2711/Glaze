@@ -76,7 +76,8 @@ export async function updateReview(
     finalMediaUrl = supabase.storage.from('review-media').getPublicUrl(path).data.publicUrl;
     hasVideo = true;
     try {
-      const thumbBlob = await generateVideoThumbnail(params.newVideoFile);
+      const thumbTimeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('thumbnail timeout')), 8000));
+      const thumbBlob = await Promise.race([generateVideoThumbnail(params.newVideoFile), thumbTimeout]);
       const thumbPath = `${freelancerId}/${reviewId}/thumbnail.jpg`;
       await supabase.storage.from('review-media').upload(thumbPath, thumbBlob, {
         contentType: 'image/jpeg',
@@ -322,11 +323,15 @@ export function useReviews(freelancerId: string | undefined) {
       const path = `${freelancerId}/${reviewId}.${ext}`;
       const sizeMB = (videoFile.size / 1024 / 1024).toFixed(1);
       console.log('[useReviews] uploading video to', path, `(${sizeMB}MB)`);
+      console.log('UPLOADING:', { fileSize: videoFile.size, fileType: videoFile.type, path });
       onProgress?.(`Uploading video (${sizeMB}MB)...`);
+      let uploadData: unknown = null;
       try {
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data } = await supabase.storage
           .from('review-media')
           .upload(path, videoFile, { contentType: videoFile.type, upsert: false });
+        uploadData = data;
+        console.log('UPLOAD RESULT:', { error: uploadError, data });
         if (uploadError) {
           console.error('[useReviews] video upload error:', uploadError.message);
           return 'Upload failed. Please try again.';
@@ -335,6 +340,7 @@ export function useReviews(freelancerId: string | undefined) {
         console.error('[useReviews] video upload threw:', e);
         return e instanceof Error ? e.message : 'Upload failed. Please try again.';
       }
+      void uploadData;
       const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(path);
       mediaUrl = publicUrl;
     }
@@ -343,7 +349,8 @@ export function useReviews(freelancerId: string | undefined) {
     let thumbnailUrl: string | null = null;
     if (videoFile) {
       try {
-        const thumbBlob = await generateVideoThumbnail(videoFile);
+        const thumbTimeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('thumbnail timeout')), 8000));
+        const thumbBlob = await Promise.race([generateVideoThumbnail(videoFile), thumbTimeout]);
         const thumbPath = `${freelancerId}/${reviewId}/thumbnail.jpg`;
         await supabase.storage.from('review-media').upload(thumbPath, thumbBlob, {
           contentType: 'image/jpeg',

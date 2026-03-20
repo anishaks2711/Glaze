@@ -111,7 +111,7 @@ function ReviewMenu({ review, userId, onEdit, onDelete }: ReviewMenuProps) {
 const FreelancerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, profile: authProfile } = useAuth();
+  const { user, profile: authProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('glazes');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -135,6 +135,7 @@ const FreelancerProfile = () => {
 
   useEffect(() => {
     if (!id) return;
+    if (authLoading) return;
     setProfileLoading(true);
     const fetchAll = async () => {
       try {
@@ -211,7 +212,7 @@ const FreelancerProfile = () => {
       }
     };
     fetchAll();
-  }, [id, refreshKey]);
+  }, [id, refreshKey, user?.id, authLoading]);
 
   if (profileLoading) {
     return (
