@@ -25,7 +25,7 @@ function IncompleteProfileGuard({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
   const { pathname } = useLocation();
   const skipPaths = ['/login', '/signup', '/onboard'];
-  if (!loading && user && !profile && !skipPaths.includes(pathname)) {
+  if (!loading && user && !profile && !skipPaths.includes(pathname) && user.user_metadata?.role === 'freelancer') {
     return <Navigate to="/onboard" replace />;
   }
   return <>{children}</>;
