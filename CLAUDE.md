@@ -252,12 +252,14 @@ IMPORTANT: Every page must have a clear back/escape path. No dead ends.
 After completing any feature:
 1. Run `npm run build` — fix all build errors
 2. Run `npx vitest run` — fix all test failures
-3. ALWAYS run `npx playwright test` after completing a feature to verify all user flows.
-4. If any E2E test fails, your change broke a user flow. Fix it before reporting done.
-5. Manually test the feature in the browser
-6. Check browser console for errors
-7. Test the unhappy paths (bad input, no network, wrong role)
-8. Only then report the feature as complete
+3. Manually test the feature in the browser
+4. Check browser console for errors
+5. Test the unhappy paths (bad input, no network, wrong role)
+6. Only then report the feature as complete
+
+- Do NOT run `npx playwright test` or any e2e tests. We do not have a separate test database.
+  E2E tests exist in the e2e/ directory but are not ready to run yet.
+- Only run `npx vitest run --reporter=verbose` for unit tests.
 </workflow>
 
 <regression-testing>
