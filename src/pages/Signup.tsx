@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { getPostSignupRedirect } from '@/lib/routing';
+import { validateFullName } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,8 @@ export default function Signup() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!role) { setError('Please select a role.'); return; }
+    const nameValidation = validateFullName(fullName);
+    if (!nameValidation.valid) { setError(nameValidation.error ?? 'Invalid name.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError(null);
     setLoading(true);

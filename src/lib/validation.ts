@@ -1,3 +1,11 @@
+export function validateFullName(name: string): { valid: boolean; error?: string } {
+  const trimmed = name.trim();
+  if (!trimmed) return { valid: false, error: 'Full name cannot be empty.' };
+  if (trimmed.length < 2) return { valid: false, error: 'Full name must be at least 2 characters.' };
+  if (trimmed.length > 100) return { valid: false, error: 'Full name must be under 100 characters.' };
+  return { valid: true };
+}
+
 export function validateServiceName(name: string): { valid: boolean; error?: string } {
   const trimmed = name.trim();
   if (!trimmed) return { valid: false, error: 'Service name cannot be empty.' };

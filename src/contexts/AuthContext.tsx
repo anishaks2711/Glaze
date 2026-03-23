@@ -86,6 +86,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) console.error('[signUp] raw error:', error.message);
     if (!error && data.user) {
       setUser(data.user);
+      if (role === 'client') {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          role: 'client',
+          full_name: fullName.trim(),
+        });
+        fetchProfile(data.user.id);
+      }
     }
     return { error: error ? mapAuthError(error.message) : null };
   }

@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt } from '@/lib/validation';
+import { validateFullName, validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt } from '@/lib/validation';
+
+describe('validateFullName', () => {
+  it('rejects empty string', () => {
+    expect(validateFullName('').valid).toBe(false);
+  });
+
+  it('rejects whitespace-only strings', () => {
+    expect(validateFullName('   ').valid).toBe(false);
+  });
+
+  it('rejects single character', () => {
+    expect(validateFullName('A').valid).toBe(false);
+  });
+
+  it('accepts valid full names', () => {
+    expect(validateFullName('Jane Doe').valid).toBe(true);
+  });
+
+  it('accepts names at exactly 2 characters', () => {
+    expect(validateFullName('Jo').valid).toBe(true);
+  });
+
+  it('rejects names over 100 characters', () => {
+    expect(validateFullName('a'.repeat(101)).valid).toBe(false);
+  });
+
+  it('accepts names at exactly 100 characters', () => {
+    expect(validateFullName('a'.repeat(100)).valid).toBe(true);
+  });
+});
 
 describe('validateServiceName', () => {
   it('rejects empty string', () => {
