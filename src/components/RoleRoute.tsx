@@ -7,11 +7,12 @@ interface Props {
 }
 
 export function RoleRoute({ role, children }: Props) {
-  const { profile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  // Only redirect when profile is loaded and role doesn't match
-  if (profile && profile.role !== role) return <Navigate to="/" replace />;
+  // Use profile role if available, fall back to user_metadata role (set at signup before profile exists)
+  const userRole = profile?.role ?? (user?.user_metadata?.role as string | undefined);
+  if (userRole && userRole !== role) return <Navigate to="/" replace />;
 
   return <>{children}</>;
 }

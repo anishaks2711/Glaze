@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile } from '@/lib/validation';
+import { validateFullName, validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt, validateSocialUsername } from '@/lib/validation';
+
+describe('validateFullName', () => {
+  it('rejects empty string', () => {
+    expect(validateFullName('').valid).toBe(false);
+  });
+
+  it('rejects whitespace-only strings', () => {
+    expect(validateFullName('   ').valid).toBe(false);
+  });
+
+  it('rejects single character', () => {
+    expect(validateFullName('A').valid).toBe(false);
+  });
+
+  it('accepts valid full names', () => {
+    expect(validateFullName('Jane Doe').valid).toBe(true);
+  });
+
+  it('accepts names at exactly 2 characters', () => {
+    expect(validateFullName('Jo').valid).toBe(true);
+  });
+
+  it('rejects names over 100 characters', () => {
+    expect(validateFullName('a'.repeat(101)).valid).toBe(false);
+  });
+
+  it('accepts names at exactly 100 characters', () => {
+    expect(validateFullName('a'.repeat(100)).valid).toBe(true);
+  });
+});
 
 describe('validateServiceName', () => {
   it('rejects empty string', () => {
@@ -128,5 +158,98 @@ describe('validatePortfolioFile', () => {
     const data = new Uint8Array(10 * 1024 * 1024);
     const file = new File([data], 'ok.jpg', { type: 'image/jpeg' });
     expect(validatePortfolioFile(file).valid).toBe(true);
+  });
+});
+
+describe('validateCategory', () => {
+  it('rejects empty string', () => {
+    expect(validateCategory('').valid).toBe(false);
+  });
+
+  it('rejects whitespace-only string', () => {
+    expect(validateCategory('   ').valid).toBe(false);
+  });
+
+  it('rejects single character', () => {
+    expect(validateCategory('A').valid).toBe(false);
+  });
+
+  it('rejects over 50 characters', () => {
+    expect(validateCategory('a'.repeat(51)).valid).toBe(false);
+  });
+
+  it('rejects special-characters-only input', () => {
+    expect(validateCategory('!!!').valid).toBe(false);
+  });
+
+  it('accepts predefined category', () => {
+    expect(validateCategory('Baker').valid).toBe(true);
+  });
+
+  it('accepts custom Other category', () => {
+    expect(validateCategory('Tattoo Artist').valid).toBe(true);
+  });
+
+  it('accepts exactly 2 characters', () => {
+    expect(validateCategory('DJ').valid).toBe(true);
+  });
+
+  it('accepts exactly 50 characters', () => {
+    expect(validateCategory('DJ' + 'a'.repeat(48)).valid).toBe(true);
+  });
+});
+
+describe('validateReviewPrompt', () => {
+  it('accepts empty string (optional)', () => {
+    expect(validateReviewPrompt('').valid).toBe(true);
+  });
+
+  it('accepts valid prompt', () => {
+    expect(validateReviewPrompt('Please mention the event type.').valid).toBe(true);
+  });
+
+  it('rejects prompt over 500 characters', () => {
+    expect(validateReviewPrompt('a'.repeat(501)).valid).toBe(false);
+  });
+
+  it('accepts exactly 500 characters', () => {
+    expect(validateReviewPrompt('a'.repeat(500)).valid).toBe(true);
+  });
+});
+
+describe('validateSocialUsername', () => {
+  it('accepts empty string (optional)', () => {
+    expect(validateSocialUsername('').valid).toBe(true);
+  });
+
+  it('accepts simple alphanumeric username', () => {
+    expect(validateSocialUsername('chouchou_bakery').valid).toBe(true);
+  });
+
+  it('accepts usernames with dots and hyphens', () => {
+    expect(validateSocialUsername('thomas-chou').valid).toBe(true);
+    expect(validateSocialUsername('my.handle').valid).toBe(true);
+  });
+
+  it('rejects usernames with spaces', () => {
+    expect(validateSocialUsername('user name').valid).toBe(false);
+  });
+
+  it('rejects usernames with special characters', () => {
+    expect(validateSocialUsername('user@name').valid).toBe(false);
+    expect(validateSocialUsername('user!name').valid).toBe(false);
+    expect(validateSocialUsername('user#name').valid).toBe(false);
+  });
+
+  it('rejects usernames over 50 characters', () => {
+    expect(validateSocialUsername('a'.repeat(51)).valid).toBe(false);
+  });
+
+  it('accepts exactly 50 characters', () => {
+    expect(validateSocialUsername('a'.repeat(50)).valid).toBe(true);
+  });
+
+  it('accepts single character', () => {
+    expect(validateSocialUsername('x').valid).toBe(true);
   });
 });

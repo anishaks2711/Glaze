@@ -24,6 +24,7 @@ export default function EditProfile() {
   const [location, setLocation] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isShy, setIsShy] = useState(false);
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
   const [saving, setSaving] = useState(false);
 
@@ -31,7 +32,7 @@ export default function EditProfile() {
     if (!user?.id) return;
     supabase
       .from('profiles')
-      .select('full_name, tagline, category, location, avatar_url, social_links')
+      .select('full_name, tagline, category, location, avatar_url, is_shy, social_links')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
@@ -41,6 +42,7 @@ export default function EditProfile() {
         setCategory(data.category ?? '');
         setLocation(data.location ?? '');
         setAvatarPreview(data.avatar_url ?? null);
+        setIsShy(data.is_shy ?? false);
         setSocialLinks((data.social_links as SocialLinks) ?? {});
       });
   }, [user?.id]);
@@ -74,6 +76,7 @@ export default function EditProfile() {
       category: category || null,
       location: location.trim() || null,
       social_links: socialLinks,
+      is_shy: isShy,
     };
     if (avatar_url) updates.avatar_url = avatar_url;
     const { error } = await supabase.from('profiles').update(updates).eq('id', user!.id);
@@ -103,6 +106,8 @@ export default function EditProfile() {
             <AvatarUpload
               previewUrl={avatarPreview}
               onChange={(f, url) => { setAvatarFile(f); setAvatarPreview(url); }}
+              isShy={isShy}
+              onIsShyChange={setIsShy}
             />
             <ProfileBasicsForm
               fullName={fullName} onFullNameChange={setFullName}

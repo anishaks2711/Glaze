@@ -7,7 +7,14 @@ interface ReviewDetailModalProps {
 }
 
 export function ReviewDetailModal({ review, onClose }: ReviewDetailModalProps) {
-  const isPhoto = !!(review.photoUrl || (review.mediaUrl && review.mediaType === 'image'));
+  const allPhotos = review.photoUrls && review.photoUrls.length > 0
+    ? review.photoUrls
+    : review.photoUrl
+      ? [review.photoUrl]
+      : review.mediaUrl && review.mediaType === 'image'
+        ? [review.mediaUrl]
+        : [];
+  const isPhoto = allPhotos.length > 0;
 
   return (
     <div
@@ -29,11 +36,21 @@ export function ReviewDetailModal({ review, onClose }: ReviewDetailModalProps) {
         {isPhoto ? (
           <>
             <div className="w-full bg-black">
-              <img
-                src={review.photoUrl ?? review.mediaUrl ?? ''}
-                alt="Review"
-                className="w-full max-h-72 object-contain"
-              />
+              <div className="flex overflow-x-auto snap-x snap-mandatory">
+                {allPhotos.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt={`Photo ${idx + 1}`}
+                    className="w-full max-h-72 object-contain flex-shrink-0 snap-center"
+                  />
+                ))}
+              </div>
+              {allPhotos.length > 1 && (
+                <p className="text-center text-xs text-white/70 py-1">
+                  {allPhotos.length} photos · scroll to see all
+                </p>
+              )}
             </div>
             <div className="p-4 space-y-2">
               <div className="flex items-center gap-2">

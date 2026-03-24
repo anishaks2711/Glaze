@@ -1,0 +1,204 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - img "Glaze" [ref=e6]
+        - heading "Glaze" [level=1] [ref=e7]
+        - link "Sign In" [ref=e9] [cursor=pointer]:
+          - /url: /login
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "Glaze" [level=2] [ref=e12]
+        - paragraph [ref=e13]: Vouched, Verified, Visible.
+        - generic [ref=e14]:
+          - link "Join as Freelancer" [ref=e15] [cursor=pointer]:
+            - /url: /signup?role=freelancer
+          - link "Explore as Client" [ref=e16] [cursor=pointer]:
+            - /url: /signup?role=client
+        - generic [ref=e17]:
+          - generic [ref=e18]: ✓ Verified reviews
+          - generic [ref=e20]: ✓ Real clients only
+          - generic [ref=e22]: ✓ Free to browse
+      - button "Browse" [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: Browse
+        - img [ref=e25]
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - img [ref=e30]
+          - textbox "Search freelancers..." [ref=e33]
+        - generic [ref=e34]:
+          - button "All" [ref=e35] [cursor=pointer]
+          - button "Baker" [ref=e36] [cursor=pointer]
+          - button "Calligrapher" [ref=e37] [cursor=pointer]
+          - button "DJ" [ref=e38] [cursor=pointer]
+          - button "Dancer" [ref=e39] [cursor=pointer]
+          - button "Emcee" [ref=e40] [cursor=pointer]
+          - button "Event Planner" [ref=e41] [cursor=pointer]
+          - button "Game Design" [ref=e42] [cursor=pointer]
+          - button "Hair Stylist" [ref=e43] [cursor=pointer]
+          - button "Photographer" [ref=e44] [cursor=pointer]
+          - button "Videographer" [ref=e45] [cursor=pointer]
+      - generic [ref=e46]:
+        - heading "All Freelancers" [level=2] [ref=e47]
+        - generic [ref=e48]:
+          - generic [ref=e50] [cursor=pointer]:
+            - img "GH" [ref=e52]
+            - generic [ref=e53]:
+              - heading "GH" [level=3] [ref=e54]
+              - paragraph [ref=e55]: "@gh"
+              - generic [ref=e57]:
+                - img [ref=e58]
+                - generic [ref=e60]: "3"
+                - generic [ref=e61]: (1)
+              - paragraph [ref=e62]: New York
+          - generic [ref=e64] [cursor=pointer]:
+            - img "amy santiage" [ref=e66]
+            - generic [ref=e67]:
+              - heading "amy santiage" [level=3] [ref=e68]
+              - paragraph [ref=e69]: "@amysantiage"
+              - generic [ref=e70]: Hair Stylist
+              - generic [ref=e71]:
+                - img [ref=e72]
+                - generic [ref=e74]: "0"
+                - generic [ref=e75]: (0)
+              - paragraph [ref=e76]: New York
+          - generic [ref=e78] [cursor=pointer]:
+            - img "Jad Saouma" [ref=e80]
+            - generic [ref=e81]:
+              - heading "Jad Saouma" [level=3] [ref=e82]
+              - paragraph [ref=e83]: "@jadsaouma"
+              - generic [ref=e84]: Event Planner
+              - generic [ref=e85]:
+                - img [ref=e86]
+                - generic [ref=e88]: "0"
+                - generic [ref=e89]: (0)
+              - paragraph [ref=e90]: Manhattan
+          - generic [ref=e92] [cursor=pointer]:
+            - img "Anna Black" [ref=e94]
+            - generic [ref=e95]:
+              - heading "Anna Black" [level=3] [ref=e96]
+              - paragraph [ref=e97]: "@annablack"
+              - generic [ref=e98]: Baker
+              - generic [ref=e99]:
+                - img [ref=e100]
+                - generic [ref=e102]: "3"
+                - generic [ref=e103]: (1)
+              - paragraph [ref=e104]: Brooklyn, NY
+          - generic [ref=e106] [cursor=pointer]:
+            - img "Sonia FL" [ref=e108]
+            - generic [ref=e109]:
+              - heading "Sonia FL" [level=3] [ref=e110]
+              - paragraph [ref=e111]: "@soniafl"
+              - generic [ref=e112]: Photographer
+              - generic [ref=e113]:
+                - img [ref=e114]
+                - generic [ref=e116]: "3.4"
+                - generic [ref=e117]: (5)
+              - paragraph [ref=e118]: New York
+          - generic [ref=e120] [cursor=pointer]:
+            - img "Testing A" [ref=e122]
+            - generic [ref=e123]:
+              - heading "Testing A" [level=3] [ref=e124]
+              - paragraph [ref=e125]: "@testinga"
+              - generic [ref=e126]: Game Design
+              - generic [ref=e127]:
+                - img [ref=e128]
+                - generic [ref=e130]: "3"
+                - generic [ref=e131]: (1)
+              - paragraph [ref=e132]: New York
+          - generic [ref=e134] [cursor=pointer]:
+            - img "Testing Hello" [ref=e136]
+            - generic [ref=e137]:
+              - heading "Testing Hello" [level=3] [ref=e138]
+              - paragraph [ref=e139]: "@testinghello"
+              - generic [ref=e140]: Calligrapher
+              - generic [ref=e141]:
+                - img [ref=e142]
+                - generic [ref=e144]: "0"
+                - generic [ref=e145]: (0)
+              - paragraph [ref=e146]: New York
+          - generic [ref=e148] [cursor=pointer]:
+            - img "Testing test" [ref=e150]
+            - generic [ref=e151]:
+              - heading "Testing test" [level=3] [ref=e152]
+              - paragraph [ref=e153]: "@testingtest"
+              - generic [ref=e154]: Videographer
+              - generic [ref=e155]:
+                - img [ref=e156]
+                - generic [ref=e158]: "0"
+                - generic [ref=e159]: (0)
+              - paragraph [ref=e160]: New York
+          - generic [ref=e162] [cursor=pointer]:
+            - img "Anisha" [ref=e164]
+            - generic [ref=e165]:
+              - heading "Anisha" [level=3] [ref=e166]
+              - paragraph [ref=e167]: "@anisha"
+              - generic [ref=e168]: Baker
+              - generic [ref=e169]:
+                - img [ref=e170]
+                - generic [ref=e172]: "3"
+                - generic [ref=e173]: (1)
+              - paragraph [ref=e174]: Roosevelt Island, NY
+          - generic [ref=e176] [cursor=pointer]:
+            - img "Pradhira Adikara" [ref=e178]
+            - generic [ref=e179]:
+              - heading "Pradhira Adikara" [level=3] [ref=e180]
+              - paragraph [ref=e181]: "@pradhiraadikara"
+              - generic [ref=e182]: Emcee
+              - generic [ref=e183]:
+                - img [ref=e184]
+                - generic [ref=e186]: "0"
+                - generic [ref=e187]: (0)
+              - paragraph [ref=e188]: Roosevelt Island
+          - generic [ref=e190] [cursor=pointer]:
+            - img "Testing 1" [ref=e192]
+            - generic [ref=e193]:
+              - heading "Testing 1" [level=3] [ref=e194]
+              - paragraph [ref=e195]: "@testing1"
+              - generic [ref=e196]: DJ
+              - generic [ref=e197]:
+                - img [ref=e198]
+                - generic [ref=e200]: "0"
+                - generic [ref=e201]: (0)
+              - paragraph [ref=e202]: New York
+          - generic [ref=e204] [cursor=pointer]:
+            - img "Testing yay" [ref=e206]
+            - generic [ref=e207]:
+              - heading "Testing yay" [level=3] [ref=e208]
+              - paragraph [ref=e209]: "@testingyay"
+              - generic [ref=e210]: Event Planner
+              - generic [ref=e211]:
+                - img [ref=e212]
+                - generic [ref=e214]: "4"
+                - generic [ref=e215]: (1)
+              - paragraph [ref=e216]: New York
+          - generic [ref=e218] [cursor=pointer]:
+            - img "Jane Rodriguez" [ref=e220]
+            - generic [ref=e221]:
+              - heading "Jane Rodriguez" [level=3] [ref=e222]
+              - paragraph [ref=e223]: "@janerodriguez"
+              - generic [ref=e224]: Dancer
+              - generic [ref=e225]:
+                - img [ref=e226]
+                - generic [ref=e228]: "0"
+                - generic [ref=e229]: (0)
+              - paragraph [ref=e230]: Brooklyn, NY
+          - generic [ref=e232] [cursor=pointer]:
+            - img "Thomas Chou" [ref=e234]
+            - generic [ref=e235]:
+              - heading "Thomas Chou" [level=3] [ref=e236]
+              - paragraph [ref=e237]: "@thomaschou"
+              - generic [ref=e238]: Baker
+              - generic [ref=e239]:
+                - img [ref=e240]
+                - generic [ref=e242]: "0"
+                - generic [ref=e243]: (0)
+              - paragraph [ref=e244]: Brooklyn, NY
+```

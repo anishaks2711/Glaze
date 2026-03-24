@@ -8,7 +8,7 @@ import {
   validateReviewPhoto,
   validateReviewCaption,
 } from '@/lib/validation';
-import { useReviews, updateReview, deleteReview } from '@/hooks/useReviews';
+import { useReviews, updateReview, deleteReview, getMyReview } from '@/hooks/useReviews';
 
 // ─── validateReviewRating ──────────────────────────────────────────────────────
 
@@ -125,7 +125,9 @@ function makeBuilder(resolveValue: unknown) {
   builder.delete = vi.fn().mockReturnValue(builder);
   builder.eq = vi.fn().mockReturnValue(builder);
   builder.order = vi.fn().mockReturnValue(builder);
+  builder.limit = vi.fn().mockReturnValue(builder);
   builder.single = vi.fn().mockResolvedValue(resolveValue);
+  builder.maybeSingle = vi.fn().mockResolvedValue(resolveValue);
   (builder as { then: (r: (v: unknown) => unknown, j?: (e: unknown) => unknown) => Promise<unknown> }).then =
     (resolve, reject) => Promise.resolve(resolveValue).then(resolve, reject);
   return builder;
@@ -225,42 +227,28 @@ describe('useReviews', () => {
     expect(mockStorageFrom).not.toHaveBeenCalled();
   });
 
-  it('submitReview succeeds with rating only (no video)', async () => {
+  // Updated: video is now required — submitReview without video returns an error
+  it('submitReview requires video (rejects null video)', async () => {
     const fetchBuilder = makeBuilder({ data: [], error: null });
-    const insertBuilder = makeBuilder({
-      data: {
-        id: 'review-1',
-        freelancer_id: 'freelancer-1',
-        client_id: 'client-1',
-        rating: 5,
-        caption: null,
-        text_content: 'Amazing!',
-        media_url: null,
-        media_type: null,
-        photo_url: null,
-        has_video: false,
-        created_at: new Date().toISOString(),
-      },
-      error: null,
-    });
-
-    mockFrom.mockReturnValueOnce(fetchBuilder).mockReturnValueOnce(insertBuilder);
+    mockFrom.mockReturnValue(fetchBuilder);
 
     const { result } = renderHook(() => useReviews('freelancer-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.clearAllMocks();
 
     let err: string | null = 'not-called';
     await act(async () => {
       err = await result.current.submitReview({ clientId: 'client-1', rating: 5, textContent: 'Amazing!' });
     });
 
-    expect(err).toBeNull();
-    expect(insertBuilder.insert).toHaveBeenCalled();
-    expect(result.current.reviews).toHaveLength(1);
+    expect(err).not.toBeNull();
+    expect(mockFrom).not.toHaveBeenCalled(); // no DB call — validation fails fast
   });
 
   it('submitReview succeeds with rating + video', async () => {
     const fetchBuilder = makeBuilder({ data: [], error: null });
+    // duplicate check returns null (no existing review)
+    const dupCheckBuilder = makeBuilder({ data: null, error: null });
     const insertBuilder = makeBuilder({
       data: {
         id: 'review-2',
@@ -278,7 +266,10 @@ describe('useReviews', () => {
       error: null,
     });
 
-    mockFrom.mockReturnValueOnce(fetchBuilder).mockReturnValueOnce(insertBuilder);
+    mockFrom
+      .mockReturnValueOnce(fetchBuilder)   // useEffect fetch
+      .mockReturnValueOnce(dupCheckBuilder) // duplicate check (.maybeSingle)
+      .mockReturnValueOnce(insertBuilder);  // insert
 
     const { result } = renderHook(() => useReviews('freelancer-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -295,6 +286,80 @@ describe('useReviews', () => {
     expect(result.current.reviews).toHaveLength(1);
     expect(result.current.reviews[0].has_video).toBe(true);
   });
+
+  it('submitReview rejects duplicate (same client + freelancer)', async () => {
+    const fetchBuilder = makeBuilder({ data: [], error: null });
+    // duplicate check finds existing review
+    const dupCheckBuilder = makeBuilder({ data: { id: 'existing-review' }, error: null });
+    mockFrom
+      .mockReturnValueOnce(fetchBuilder)
+      .mockReturnValueOnce(dupCheckBuilder);
+
+    const { result } = renderHook(() => useReviews('freelancer-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const videoFile = new File(['data'], 'review.mp4', { type: 'video/mp4' });
+
+    let err: string | null = 'not-called';
+    await act(async () => {
+      err = await result.current.submitReview({ clientId: 'client-1', rating: 4, videoFile });
+    });
+
+    expect(err).toContain("You've already Glazed");
+    expect(mockStorageFrom).not.toHaveBeenCalled(); // no upload attempted
+  });
+});
+
+// ─── getMyReview ───────────────────────────────────────────────────────────────
+
+describe('getMyReview', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the review if one exists for the client+freelancer pair', async () => {
+    const review = {
+      id: 'review-1',
+      freelancer_id: 'fl-1',
+      client_id: 'cl-1',
+      rating: 5,
+      caption: 'Amazing!',
+      text_content: null,
+      media_url: null,
+      media_type: null,
+      photo_url: null,
+      has_video: false,
+      created_at: new Date().toISOString(),
+    };
+    const builder = makeBuilder({ data: review, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('review-1');
+    expect(result?.rating).toBe(5);
+    expect(builder.eq).toHaveBeenCalledWith('freelancer_id', 'fl-1');
+    expect(builder.eq).toHaveBeenCalledWith('client_id', 'cl-1');
+  });
+
+  it('returns null if no review exists', async () => {
+    const builder = makeBuilder({ data: null, error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null on error', async () => {
+    const builder = makeBuilder({ data: null, error: { message: 'DB error' } });
+    mockFrom.mockReturnValue(builder);
+
+    const result = await getMyReview('fl-1', 'cl-1');
+
+    expect(result).toBeNull();
+  });
 });
 
 // ─── updateReview ──────────────────────────────────────────────────────────────
@@ -309,9 +374,9 @@ describe('updateReview', () => {
     let err: string | null = null;
     err = await updateReview('review-1', 'freelancer-1', {
       rating: 0, caption: '', textContent: '',
-      newVideoFile: null, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
-      currentMediaUrl: null, currentPhotoUrl: null,
+      newVideoFile: null, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
+      currentMediaUrl: null, currentPhotoUrls: [],
     });
     expect(err).not.toBeNull();
     expect(mockFrom).not.toHaveBeenCalled();
@@ -321,9 +386,9 @@ describe('updateReview', () => {
     let err: string | null = null;
     err = await updateReview('review-1', 'freelancer-1', {
       rating: 2.5, caption: '', textContent: '',
-      newVideoFile: null, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
-      currentMediaUrl: null, currentPhotoUrl: null,
+      newVideoFile: null, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
+      currentMediaUrl: null, currentPhotoUrls: [],
     });
     expect(err).not.toBeNull();
     expect(mockFrom).not.toHaveBeenCalled();
@@ -335,9 +400,9 @@ describe('updateReview', () => {
     let err: string | null = null;
     err = await updateReview('review-1', 'freelancer-1', {
       rating: 4, caption: '', textContent: '',
-      newVideoFile: bigFile, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
-      currentMediaUrl: null, currentPhotoUrl: null,
+      newVideoFile: bigFile, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
+      currentMediaUrl: null, currentPhotoUrls: [],
     });
     expect(err).not.toBeNull();
     expect(mockFrom).not.toHaveBeenCalled();
@@ -350,9 +415,9 @@ describe('updateReview', () => {
 
     const err = await updateReview('review-1', 'freelancer-1', {
       rating: 5, caption: 'Great!', textContent: 'Loved it',
-      newVideoFile: null, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
-      currentMediaUrl: null, currentPhotoUrl: null,
+      newVideoFile: null, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
+      currentMediaUrl: null, currentPhotoUrls: [],
     });
     expect(err).toBeNull();
     expect(builder.update).toHaveBeenCalled();
@@ -366,9 +431,9 @@ describe('updateReview', () => {
     const videoFile = new File(['data'], 'new.mp4', { type: 'video/mp4' });
     const err = await updateReview('review-1', 'freelancer-1', {
       rating: 4, caption: '', textContent: '',
-      newVideoFile: videoFile, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
-      currentMediaUrl: null, currentPhotoUrl: null,
+      newVideoFile: videoFile, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
+      currentMediaUrl: null, currentPhotoUrls: [],
     });
     expect(err).toBeNull();
     expect(mockStorageFrom).toHaveBeenCalledWith('review-media');
@@ -384,13 +449,76 @@ describe('updateReview', () => {
     const videoFile = new File(['data'], 'new.mp4', { type: 'video/mp4' });
     const err = await updateReview('review-1', 'freelancer-1', {
       rating: 4, caption: '', textContent: '',
-      newVideoFile: videoFile, newPhotoFile: null,
-      keepExistingVideo: false, keepExistingPhoto: false,
+      newVideoFile: videoFile, newPhotoFiles: [],
+      keepExistingVideo: false, keepExistingPhotos: false,
       currentMediaUrl: 'https://example.com/storage/v1/object/public/review-media/fl-1/old.mp4',
-      currentPhotoUrl: null,
+      currentPhotoUrls: [],
     });
     expect(err).toBeNull();
     expect(storage.remove).toHaveBeenCalledWith(['fl-1/old.mp4']);
+  });
+});
+
+// ─── review data integrity ─────────────────────────────────────────────────────
+
+describe('review data integrity', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('fetched reviews always include media_url for video reviews', async () => {
+    const videoReview = {
+      id: 'review-video-1',
+      freelancer_id: 'fl-1',
+      client_id: 'cl-1',
+      rating: 5,
+      caption: null,
+      text_content: null,
+      media_url: 'https://example.com/review-media/fl-1/review-video-1.mp4',
+      media_type: 'video' as const,
+      photo_url: null,
+      has_video: true,
+      created_at: new Date().toISOString(),
+    };
+    const builder = makeBuilder({ data: [videoReview], error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const { result } = renderHook(() => useReviews('fl-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.reviews).toHaveLength(1);
+    const fetched = result.current.reviews[0];
+    // These assertions catch the bug: media_url dropped from SELECT_FIELDS
+    expect(fetched.media_url).toBe('https://example.com/review-media/fl-1/review-video-1.mp4');
+    expect(fetched.has_video).toBe(true);
+    expect(fetched.media_type).toBe('video');
+  });
+
+  it('fetched reviews include photo_url from review_photos without nullifying media_url', async () => {
+    const photoReview = {
+      id: 'review-photo-1',
+      freelancer_id: 'fl-1',
+      client_id: 'cl-1',
+      rating: 4,
+      caption: 'Great session',
+      text_content: 'Loved the work',
+      media_url: null,
+      media_type: null,
+      photo_url: 'https://example.com/review-media/fl-1/review-photo-1-photo-0.jpg',
+      has_video: false,
+      created_at: new Date().toISOString(),
+    };
+    const builder = makeBuilder({ data: [photoReview], error: null });
+    mockFrom.mockReturnValue(builder);
+
+    const { result } = renderHook(() => useReviews('fl-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.reviews).toHaveLength(1);
+    const fetched = result.current.reviews[0];
+    // photo_url must be present — adding review_photos support must not drop this
+    expect(fetched.photo_url).toBe('https://example.com/review-media/fl-1/review-photo-1-photo-0.jpg');
+    // media_url must be null (not undefined) — SELECT_FIELDS must always include media_url
+    expect(fetched.media_url).toBeNull();
+    expect(fetched.has_video).toBe(false);
   });
 });
 
