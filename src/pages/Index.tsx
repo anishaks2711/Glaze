@@ -120,13 +120,19 @@ const Index = () => {
               Glaze
             </h2>
 
-            {/* Tagline */}
-            <p
-              className="text-lg sm:text-xl font-semibold mb-8"
-              style={{ background: 'linear-gradient(135deg, hsl(22,97%,44%), hsl(340,75%,65%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-            >
-              Vouched, Verified, Visible.
-            </p>
+            {/* Tagline + subtext */}
+            <div className="flex flex-col items-center gap-2 mb-8">
+              <p
+                className="text-lg sm:text-xl font-semibold"
+                style={{ background: 'linear-gradient(135deg, hsl(22,97%,44%), hsl(340,75%,65%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+              >
+                Vouched. Verified. Visible.
+              </p>
+              <p className="text-sm max-w-[26rem] leading-relaxed text-center italic" style={{ color: 'hsl(22, 55%, 48%)' }}>
+                The reputation network that proves you're legit.<br />
+                Let your track record do the talking.
+              </p>
+            </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs mb-8">
@@ -141,7 +147,7 @@ const Index = () => {
                 to="/signup?role=client"
                 className="flex-1 rounded-2xl border border-border bg-card/80 backdrop-blur-sm px-6 py-3.5 text-sm font-semibold text-foreground text-center hover:bg-secondary active:scale-95 transition-all"
               >
-                Explore as Client
+                Explore Verified Pros
               </Link>
             </div>
 
