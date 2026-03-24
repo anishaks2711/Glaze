@@ -459,6 +459,9 @@ const FreelancerProfile = () => {
                       <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
                         <p className="text-[10px] text-background font-medium truncate">{review.clientName}</p>
                         <StarRow rating={review.rating} size="xs" />
+                        {review.caption && (
+                          <p className="text-xs text-white/80 truncate">{review.caption}</p>
+                        )}
                       </div>
                     </div>
                   ))}

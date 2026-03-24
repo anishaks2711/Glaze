@@ -16,7 +16,7 @@ import PortfolioUploadStep from '@/components/PortfolioUploadStep';
 import ReviewPromptForm from '@/components/profile/ReviewPromptForm';
 import OnboardStep7Review from '@/components/OnboardStep7Review';
 import VerificationStep from '@/components/profile/VerificationStep';
-import { validateSocialUrl, validateUsername } from '@/lib/validation';
+import { validateUsername } from '@/lib/validation';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 interface PortfolioPhoto { file: File; preview: string; caption: string | null; }
@@ -87,8 +87,6 @@ export default function FreelancerOnboard() {
     if (!checkVerification()) return;
     const filled = Object.values(socialLinks).filter(v => v?.trim());
     if (filled.length === 0) { setSocialError('At least one social link is required.'); return; }
-    const bad = filled.find(v => !validateSocialUrl(v!).valid);
-    if (bad) { setSocialError('All links must start with https://'); return; }
     setSocialError(null);
     setStep(4);
   }

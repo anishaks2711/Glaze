@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateFullName, validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt } from '@/lib/validation';
+import { validateFullName, validateServiceName, validateEmail, validatePassword, validateTagline, validateCaption, validatePortfolioFile, validateCategory, validateReviewPrompt, validateSocialUsername } from '@/lib/validation';
 
 describe('validateFullName', () => {
   it('rejects empty string', () => {
@@ -214,5 +214,42 @@ describe('validateReviewPrompt', () => {
 
   it('accepts exactly 500 characters', () => {
     expect(validateReviewPrompt('a'.repeat(500)).valid).toBe(true);
+  });
+});
+
+describe('validateSocialUsername', () => {
+  it('accepts empty string (optional)', () => {
+    expect(validateSocialUsername('').valid).toBe(true);
+  });
+
+  it('accepts simple alphanumeric username', () => {
+    expect(validateSocialUsername('chouchou_bakery').valid).toBe(true);
+  });
+
+  it('accepts usernames with dots and hyphens', () => {
+    expect(validateSocialUsername('thomas-chou').valid).toBe(true);
+    expect(validateSocialUsername('my.handle').valid).toBe(true);
+  });
+
+  it('rejects usernames with spaces', () => {
+    expect(validateSocialUsername('user name').valid).toBe(false);
+  });
+
+  it('rejects usernames with special characters', () => {
+    expect(validateSocialUsername('user@name').valid).toBe(false);
+    expect(validateSocialUsername('user!name').valid).toBe(false);
+    expect(validateSocialUsername('user#name').valid).toBe(false);
+  });
+
+  it('rejects usernames over 50 characters', () => {
+    expect(validateSocialUsername('a'.repeat(51)).valid).toBe(false);
+  });
+
+  it('accepts exactly 50 characters', () => {
+    expect(validateSocialUsername('a'.repeat(50)).valid).toBe(true);
+  });
+
+  it('accepts single character', () => {
+    expect(validateSocialUsername('x').valid).toBe(true);
   });
 });

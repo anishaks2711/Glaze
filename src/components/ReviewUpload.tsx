@@ -76,20 +76,20 @@ export function ReviewUpload({
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   You've Glazed {freelancerName}
                 </span>
-                <Button variant="outline" size="sm" onClick={() => onEditMyReview ? onEditMyReview() : setInternalOpen(true)}>
+                <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => onEditMyReview ? onEditMyReview() : setInternalOpen(true)}>
                   Edit your Glaze
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setInternalOpen(true)}>
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setInternalOpen(true)}>
                 Leave a Glaze
               </Button>
             )}
           </>
         )}
         <Button
+          variant="outline"
           size="sm"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => setChatOpen(true)}
         >
           Message

@@ -118,3 +118,13 @@ export function validateSocialUrl(url: string): { valid: boolean; error?: string
   }
   return { valid: true };
 }
+
+export function validateSocialUsername(username: string): { valid: boolean; error?: string } {
+  const trimmed = username.trim();
+  if (!trimmed) return { valid: true }; // optional — empty is fine
+  if (trimmed.length > 50) return { valid: false, error: 'Username must be under 50 characters.' };
+  if (!/^[a-zA-Z0-9._-]+$/.test(trimmed)) {
+    return { valid: false, error: 'Only letters, numbers, dots, underscores, and hyphens allowed.' };
+  }
+  return { valid: true };
+}
