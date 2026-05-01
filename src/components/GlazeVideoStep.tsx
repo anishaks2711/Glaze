@@ -111,12 +111,10 @@ export function GlazeVideoStep({ onVideoSelected, onClose }: GlazeVideoStepProps
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {!previewUrl && (
-        <button onClick={() => setShowDiscard(true)}
-          className="absolute top-4 left-4 z-10 p-2 rounded-full bg-black/50 text-white">
-          <X className="h-5 w-5" />
-        </button>
-      )}
+      <button onClick={() => setShowDiscard(true)}
+        className="absolute top-4 left-4 z-10 p-2 rounded-full bg-black/50 text-white">
+        <X className="h-5 w-5" />
+      </button>
       {!previewUrl && !isRecording && (
         <button onClick={() => startCamera(facingMode === 'user' ? 'environment' : 'user')}
           disabled={!stream}
@@ -133,12 +131,12 @@ export function GlazeVideoStep({ onVideoSelected, onClose }: GlazeVideoStepProps
       )}
 
       {previewUrl ? (
-        <video key={previewUrl} src={previewUrl} controls autoPlay playsInline className="flex-1 w-full object-cover" />
+        <video key={previewUrl} src={previewUrl} controls autoPlay playsInline className="flex-1 min-h-0 w-full object-cover" />
       ) : (
-        <video ref={videoRef} autoPlay muted playsInline className="flex-1 w-full object-cover bg-neutral-900" />
+        <video ref={videoRef} autoPlay muted playsInline className="flex-1 min-h-0 w-full object-cover bg-neutral-900" />
       )}
 
-      <div className="shrink-0 pb-8 pt-4 px-6 flex flex-col items-center gap-4 bg-gradient-to-t from-black/70 to-transparent">
+      <div className="shrink-0 min-h-[140px] pb-8 pt-4 px-6 flex flex-col items-center justify-center gap-4 bg-black">
         {permissionDenied ? (
           <div className="text-center space-y-3 px-4">
             <p className="text-white text-sm">
